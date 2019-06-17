@@ -1,0 +1,143 @@
+body {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif, Microsoft Yahei UI, "微软雅黑";
+    font-size: 16px;
+}
+
+.pagination {
+    font-size: 20px;
+    margin-top: 15px;
+    margin-bottom: 25px;
+}
+
+.page-navbar {
+    /*width: 80%;*/
+    margin-left: auto;
+    margin-right: auto;
+    /*padding: 30px 10px 20px 20px;*/
+    /*border-bottom: 2px solid #DDDDDD;*/
+    font-size: 20px;
+}
+
+.page-navbar-title {
+    margin-left: 11%;
+    color: black;
+    font-size: 28px;
+}
+
+.page-navbar .collapse, .page-navbar .navbar-toggler {
+    margin-right: 10.5%;
+}
+
+.page-navbar-title:hover {
+    text-decoration: none;
+}
+
+.page-container {
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 20px;
+}
+
+.page-sidebar .card-title, .card-text {
+    text-align: center;
+}
+
+.page-sidebar .input-group {
+    margin-top: 15px;
+}
+
+.page-sidebar .list-group {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.page-sidebar-list-content .fas {
+    width: 15%;
+}
+
+.page-sidebar-list-content .fab {
+    width: 15%;
+}
+
+.page-sidebar-list-content .badge {
+    float: right;
+    margin-top: 2px;
+}
+
+.page-content .card {
+    margin-bottom: 30px;
+}
+
+.page-content .card-text {
+    text-align: left;
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: #6f6f6f;
+}
+
+.page-content .card-footer .badge {
+    font-size: 16px;
+    margin-right: 5px;
+}
+
+.page-content .card-footer i {
+    margin-left: 3px;
+    margin-right: 5px;
+}
+
+.page-content .alert {
+    font-size: 20px;
+}
+
+.page-content-button {
+    width: 100%;
+    font-size: 20px;
+}
+
+.page-article .card {
+    margin-bottom: 30px;
+}
+
+.page-article .card-text {
+    text-align: left;
+    font-size: 20px;
+    margin-bottom: 15px;
+}
+
+.page-article .card-footer .badge {
+    font-size: 16px;
+    margin-right: 5px;
+}
+
+.page-article .badge {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.page-article .card-footer i {
+    margin-left: 3px;
+    margin-right: 5px;
+}
+
+.page-article-button {
+    width: 100%;
+    font-size: 20px;
+}
+
+.page-category {
+    font-size: 24px;
+}
+
+.page-category h2 {
+    color: black;
+}
+
+.page-category .badge {
+    font-size: 20px;
+    padding: 11px;
+}
+
+footer {
+    background-color: rgba(0,0,0,.03);
+}

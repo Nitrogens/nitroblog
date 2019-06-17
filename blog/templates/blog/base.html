@@ -1,0 +1,97 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <link rel="stylesheet" href="{% static 'blog/css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static 'blog/css/style.css' %}">
+        <link rel="stylesheet" href="{% static 'blog/fontawesome/css/all.css' %}">
+
+        <title>{{ basic_info.blog_name }}</title>
+    </head>
+
+    <body>
+        <div class="page-navbar">
+
+            <nav class="navbar navbar-expand-lg navbar-light shadow-sm bg-white rounded d-flex">
+
+                <a class="navbar-brand page-navbar-title" href="{% url 'blog:index' %}">{{ basic_info.blog_name }}</a>
+
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="#">首页</a>
+                        </li>
+                        {% for page in page_list %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">{{ page.title }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            </nav>
+
+        </div>
+
+        <div class="page-container container-fluid">
+
+            <div class="row">
+
+                <div class="page-sidebar col-lg-3">
+                    <div class="card">
+                        <img class="card-img-top" src="{% static 'blog/image/avatar.jpg' %}" alt="Card image cap">
+                        <div class="card-body">
+                            <h2 class="card-title">Nitrogens</h2>
+                            <p class="card-text">An algorithm lover.</p>
+                            <p class="card-text">Learning in College of Computer Science & Technology of Harbin Engineering University.</p>
+                        </div>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="搜索" aria-label="搜索" aria-describedby="button-addon2">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="button-addon2"><i class="fas fa-search"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="list-group">
+                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fas fa-cube"></i>分类<span class="badge badge-pill badge-primary">{{ basic_info.number_of_category }}</span></span></a>
+                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fas fa-tags"></i>标签<span class="badge badge-pill badge-primary">{{ basic_info.number_of_tag }}</span></span></a>
+                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fas fa-archive"></i>归档</span></a>
+                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fas fa-link"></i>链接<span class="badge badge-pill badge-primary">{{ basic_info.number_of_link }}</span></span></a>
+                    </div>
+
+                    <div class="list-group">
+                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fab fa-github"></i>GitHub</span></a>
+                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fas fa-hashtag"></i>微博</span></a>
+                    </div>
+                </div>
+
+                {% block container %}
+                {% endblock %}
+
+            </div>
+
+        </div>
+
+        <footer class="footer py-3">
+            <div class="container">
+                <span class="text-muted">Copyright &copy; 2019 {{ basic_info.blog_name }}.</span>
+            </div>
+        </footer>
+
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+        <script src="{% static 'blog/js/bootstrap.min.js' %}"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
+        <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script type="text/javascript" src="{% static 'blog/js/math.js' %}"></script>
+    </body>
+</html>

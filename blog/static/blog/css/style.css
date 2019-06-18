@@ -125,6 +125,20 @@ body {
     font-size: 20px;
 }
 
+.page-article-comment-add {
+    margin-bottom: 30px;
+}
+
+.page-article-comment .card-header .badge {
+    font-size: 16px;
+    margin-right: 5px;
+}
+
+.page-article-comment .card-header i {
+    margin-left: 3px;
+    margin-right: 5px;
+}
+
 .page-category {
     font-size: 24px;
 }

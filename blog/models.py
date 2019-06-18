@@ -32,7 +32,7 @@ class Comment(models.Model):
     author_ip = models.CharField(max_length=64)
     status = models.CharField(max_length=16)
     text = models.TextField()
-    parent = models.ForeignKey('self', on_delete=models.CASCADE)
+    parent_id = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True)
 
 
 class Meta(models.Model):

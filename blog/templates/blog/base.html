@@ -26,11 +26,11 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ml-auto">
                         <li class="nav-item active">
-                            <a class="nav-link" href="#">首页</a>
+                            <a class="nav-link" href="/">首页</a>
                         </li>
                         {% for page in page_list %}
                         <li class="nav-item">
-                            <a class="nav-link" href="#">{{ page.title }}</a>
+                            <a class="nav-link" href="{% url 'blog:page' page.slug %}">{{ page.title }}</a>
                         </li>
                         {% endfor %}
                     </ul>

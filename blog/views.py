@@ -15,8 +15,8 @@ def ceil(a, b):
 
 def get_basic_info():
     basic_info = {}
-    basic_info['blog_name'] = Setting.objects.filter(name='blog_name')[0].value
-    basic_info['page_size'] = int(Setting.objects.filter(name='page_size')[0].value)
+    basic_info['blog_name'] = Setting.objects.get(name='blog_name').value
+    basic_info['page_size'] = int(Setting.objects.get(name='page_size').value)
     basic_info['number_of_category'] = Meta.objects.filter(type='category').count()
     basic_info['number_of_tag'] = Meta.objects.filter(type='tag').count()
     basic_info['number_of_link'] = Link.objects.all().count()
@@ -42,7 +42,7 @@ def index(request, page_id=1):
     category_list = []
     tag_list = []
 
-    for article in article_list:
+    for article_item in article_list:
         category_list_query = 'SELECT id, name, slug ' \
                               'FROM blog_meta ' \
                               'WHERE id in (' \
@@ -51,7 +51,7 @@ def index(request, page_id=1):
                               'WHERE content_id_id = %s ' \
                               ')' \
                               'AND type = "category";'
-        raw_category_list = Meta.objects.raw(category_list_query, [article.id])
+        raw_category_list = Meta.objects.raw(category_list_query, [article_item.id])
         category_list.append(raw_category_list)
 
         tag_list_query = 'SELECT id, name, slug ' \
@@ -62,7 +62,7 @@ def index(request, page_id=1):
                          'WHERE content_id_id = %s ' \
                          ')' \
                          'AND type = "tag";'
-        raw_tag_list = Meta.objects.raw(tag_list_query, [article.id])
+        raw_tag_list = Meta.objects.raw(tag_list_query, [article_item.id])
         tag_list.append(raw_tag_list)
 
     context = {
@@ -76,3 +76,43 @@ def index(request, page_id=1):
 
     return render(request, 'blog/index.html', context)
 
+
+def article(request, article_slug, page_id=1):
+    try:
+        article_info = Content.objects.get(slug=article_slug)
+    except (KeyError, Content.DoesNotExist):
+        raise Http404('Could not found this page!')
+
+    basic_info = get_basic_info()
+
+    category_list_query = 'SELECT id, name, slug ' \
+                          'FROM blog_meta ' \
+                          'WHERE id in (' \
+                          'SELECT meta_id_id ' \
+                          'FROM blog_relationship ' \
+                          'WHERE content_id_id = %s ' \
+                          ')' \
+                          'AND type = "category";'
+
+    tag_list_query = 'SELECT id, name, slug ' \
+                     'FROM blog_meta ' \
+                     'WHERE id in (' \
+                     'SELECT meta_id_id ' \
+                     'FROM blog_relationship ' \
+                     'WHERE content_id_id = %s ' \
+                     ')' \
+                     'AND type = "tag";'
+
+    page_list = Content.objects.filter(type='page').order_by('priority_id')
+    category_list = Meta.objects.raw(category_list_query, [article_info.id])
+    tag_list = Meta.objects.raw(tag_list_query, [article_info.id])
+
+    context = {
+        'page_list': page_list,
+        'category_list': category_list,
+        'tag_list': tag_list,
+        'article_info': article_info,
+        'basic_info': basic_info,
+    }
+
+    return render(request, 'blog/article.html', context)

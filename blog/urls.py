@@ -6,7 +6,8 @@ app_name = 'blog'
 urlpatterns = [
     path('', views.index, name='index'),
     path('page/<int:page_id>/', views.index, name='index'),
-    # path('article/<str:article_slug>/', views.article, name='article'),
+    path('article/<str:article_slug>/', views.article, name='article'),
+    # path('article/<str:article_slug>/page/<int:page_id>/', views.article, name='article'),
     # path('category/', views.category, name='category'),
     # path('category/page/<int:page_id>/', views.category, name='category'),
     # path('category/<str:category_slug>/', views.category_detail, name='category_detail'),
@@ -17,5 +18,5 @@ urlpatterns = [
     # path('archive/page/<int:page_id>/', views.archive, name='archive'),
     # path('archive/<int:year>-<int:month>/', views.archive, name='archive_detail'),
     # path('link/', views.link, name='link'),
-    # path('<str:page_slug>.html', views.article, name='page'),
+    path('<str:article_slug>.html', views.article, name='page'),
 ]

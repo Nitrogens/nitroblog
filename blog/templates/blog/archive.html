@@ -1,0 +1,22 @@
+{% extends 'blog/base.html' %}
+{% load blog_extras %}
+{% block container %}
+                <div class="page-category col-lg-9">
+
+                    <div class="alert alert-primary" role="alert">
+                        <i class="fas fa-cube"></i> 归档
+                    </div>
+
+                    <div class="list-group">
+                        {% for archive in archive_list %}
+                        <a href="{% url 'blog:archive_detail' archive.0 archive.1 %}" class="list-group-item list-group-item-action flex-column align-items-start">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h2 class="mb-1"><i class="far fa-calendar-alt"></i> {{ archive.0 }} 年 {{ archive.1 }} 月</h2>
+                                <span class="badge badge-primary"><i class="fas fa-file-alt"></i> {{ archive.2 }}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+
+                </div>
+{% endblock %}

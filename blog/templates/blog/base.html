@@ -1,4 +1,8 @@
 {% load static %}
+{% load blog_extras %}
+{% url 'blog:category' as url_category %}
+{% url 'blog:category_detail' as url_category_detail %}
+{% get_view_name request.path as view_name %}
 <!DOCTYPE html>
 <html lang="zh">
     <head>
@@ -25,11 +29,12 @@
 
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ml-auto">
-                        <li class="nav-item active">
+                        <li class="nav-item {% if request.path == '/' %}active{% endif %}">
                             <a class="nav-link" href="/">首页</a>
                         </li>
                         {% for page in page_list %}
-                        <li class="nav-item">
+                        {% str_cat page.slug '.html' as file_name %}
+                        <li class="nav-item {% if view_name == file_name %}active{% endif %}">
                             <a class="nav-link" href="{% url 'blog:page' page.slug %}">{{ page.title }}</a>
                         </li>
                         {% endfor %}
@@ -54,19 +59,20 @@
                         </div>
                     </div>
 
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control" placeholder="搜索" aria-label="搜索" aria-describedby="button-addon2">
+                    <form class="input-group mb-3" method="get" action="{% url 'blog:search' %}">
+                        <input type="text" class="form-control" placeholder="搜索" id="keyword" name="keyword">
                         <div class="input-group-append">
-                            <button class="btn btn-outline-secondary" type="button" id="button-addon2"><i class="fas fa-search"></i></button>
+                            <button class="btn btn-outline-secondary" type="submit" id="button-addon2"><i class="fas fa-search"></i></button>
                         </div>
-                    </div>
+                    </form>
 
                     <div class="list-group">
-                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fas fa-cube"></i>分类<span class="badge badge-pill badge-primary">{{ basic_info.number_of_category }}</span></span></a>
-                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fas fa-tags"></i>标签<span class="badge badge-pill badge-primary">{{ basic_info.number_of_tag }}</span></span></a>
-                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fas fa-archive"></i>归档</span></a>
-                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fas fa-link"></i>链接<span class="badge badge-pill badge-primary">{{ basic_info.number_of_link }}</span></span></a>
+                        <a href="{% url 'blog:category' %}" class="list-group-item list-group-item-action {% if view_name == 'category' %}active{% endif %}"><span class="page-sidebar-list-content"><i class="fas fa-cube"></i>分类<span class="badge badge-pill {% if view_name == 'category' %}badge-light{% else %}badge-primary{% endif %}">{{ basic_info.number_of_category }}</span></span></a>
+                        <a href="{% url 'blog:tag' %}" class="list-group-item list-group-item-action {% if view_name == 'tag' %}active{% endif %}"><span class="page-sidebar-list-content"><i class="fas fa-tags"></i>标签<span class="badge badge-pill {% if view_name == 'tag' %}badge-light{% else %}badge-primary{% endif %}">{{ basic_info.number_of_tag }}</span></span></a>
+                        <a href="{% url 'blog:archive' %}" class="list-group-item list-group-item-action {% if view_name == 'archive' %}active{% endif %}"><span class="page-sidebar-list-content"><i class="fas fa-archive"></i>归档</span></a>
+                        <a href="{% url 'blog:link' %}" class="list-group-item list-group-item-action {% if view_name == 'link' %}active{% endif %}"><span class="page-sidebar-list-content"><i class="fas fa-link"></i>链接<span class="badge badge-pill {% if view_name == 'link' %}badge-light{% else %}badge-primary{% endif %}">{{ basic_info.number_of_link }}</span></span></a>
                     </div>
+
 
                     <div class="list-group">
                         <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fab fa-github"></i>GitHub</span></a>

@@ -3,6 +3,10 @@
 {% block container %}
 <div class="page-content col-lg-9">
 
+     <div class="alert alert-primary" role="alert">
+         <i class="fas fa-tag"></i> 标签：{{ tag_info.name }} <span class="badge badge-pill badge-light" href="#">{{ basic_info.number_of_article }}</span>
+     </div>
+
     {% for article in article_list %}
     <div class="card">
         <div class="card-body">
@@ -13,9 +17,9 @@
         </div>
         <div class="card-footer">
             <span class="badge badge-warning"><i class="fas fa-calendar-day"></i> {{ article.create_time }}</span>
-            {% get_element_from_index category_list forloop.counter0 as raw_category_list %}
-            {% for category in raw_category_list %}
-            <a class="badge badge-dark" href="#"><i class="fas fa-cube"></i> {{ category.name }}</a>
+            {% get_element_from_index tag_list forloop.counter0 as raw_tag_list %}
+            {% for tag in raw_tag_list %}
+            <a class="badge badge-dark" href="#"><i class="fas fa-cube"></i> {{ tag.name }}</a>
             {% endfor %}
             {% get_element_from_index tag_list forloop.counter0 as raw_tag_list %}
             {% for tag in raw_tag_list %}
@@ -28,25 +32,25 @@
     <nav>
         <ul class="pagination">
             {% if page_id > 1 %}
-            <li class="page-item"><a class="page-link" href="{% url 'blog:index' page_id|add:-1 %}"><i class="fas fa-arrow-left"></i> 上一页</a></li>
+            <li class="page-item"><a class="page-link" href="{% url 'blog:tag_detail' tag_info.slug page_id|add:-1 %}"><i class="fas fa-arrow-left"></i> 上一页</a></li>
             {% endif %}
             {% if page_id > 2 %}
-            <li class="page-item"><a class="page-link" href="{% url 'blog:index' page_id|add:-2 %}">{{ page_id|add:-2 }}</a></li>
+            <li class="page-item"><a class="page-link" href="{% url 'blog:tag_detail' tag_info.slug page_id|add:-2 %}">{{ page_id|add:-2 }}</a></li>
             {% endif %}
             {% if page_id > 1 %}
-            <li class="page-item"><a class="page-link" href="{% url 'blog:index' page_id|add:-1 %}">{{ page_id|add:-1 }}</a></li>
+            <li class="page-item"><a class="page-link" href="{% url 'blog:tag_detail' tag_info.slug page_id|add:-1 %}">{{ page_id|add:-1 }}</a></li>
             {% endif %}
 
             <li class="page-item active"><a class="page-link" href="#">{{ page_id }}</a></li>
 
             {% if page_id < basic_info.number_of_article_page %}
-            <li class="page-item"><a class="page-link" href="{% url 'blog:index' page_id|add:1 %}">{{ page_id|add:1 }}</a></li>
+            <li class="page-item"><a class="page-link" href="{% url 'blog:tag_detail' tag_info.slug page_id|add:1 %}">{{ page_id|add:1 }}</a></li>
             {% endif %}
             {% if page_id|add:1 < basic_info.number_of_article_page %}
-            <li class="page-item"><a class="page-link" href="{% url 'blog:index' page_id|add:2 %}">{{ page_id|add:2 }}</a></li>
+            <li class="page-item"><a class="page-link" href="{% url 'blog:tag_detail' tag_info.slug page_id|add:2 %}">{{ page_id|add:2 }}</a></li>
             {% endif %}
             {% if page_id < basic_info.number_of_article_page %}
-            <li class="page-item"><a class="page-link" href="{% url 'blog:index' page_id|add:1 %}"><i class="fas fa-arrow-right"></i> 下一页</a></li>
+            <li class="page-item"><a class="page-link" href="{% url 'blog:tag_detail' tag_info.slug page_id|add:1 %}"><i class="fas fa-arrow-right"></i> 下一页</a></li>
             {% endif %}
         </ul>
     </nav>

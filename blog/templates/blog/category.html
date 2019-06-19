@@ -1,0 +1,48 @@
+{% extends 'blog/base.html' %}
+{% load blog_extras %}
+{% block container %}
+                <div class="page-category col-lg-9">
+
+                    <div class="alert alert-primary" role="alert">
+                        <i class="fas fa-cube"></i> 分类 <span class="badge badge-pill badge-light" href="#">{{ basic_info.number_of_category }}</span>
+                    </div>
+
+                    <div class="list-group">
+                        {% for category in category_list %}
+                        <a href="{% url 'blog:category_detail' category.2 %}" class="list-group-item list-group-item-action flex-column align-items-start">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h2 class="mb-1">{{ category.1 }}</h2>
+                                <span class="badge badge-primary"><i class="fas fa-file-alt"></i> {{ category.4 }}</span>
+                            </div>
+                            <p class="mb-1">{{ category.3 }}</p>
+                        </a>
+                        {% endfor %}
+                    </div>
+
+                    <nav>
+                        <ul class="pagination">
+                            {% if page_id > 1 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'blog:category' page_id|add:-1 %}"><i class="fas fa-arrow-left"></i> 上一页</a></li>
+                            {% endif %}
+                            {% if page_id > 2 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'blog:category' page_id|add:-2 %}">{{ page_id|add:-2 }}</a></li>
+                            {% endif %}
+                            {% if page_id > 1 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'blog:category' page_id|add:-1 %}">{{ page_id|add:-1 }}</a></li>
+                            {% endif %}
+
+                            <li class="page-item active"><a class="page-link" href="#">{{ page_id }}</a></li>
+
+                            {% if page_id < basic_info.number_of_category_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'blog:category' page_id|add:1 %}">{{ page_id|add:1 }}</a></li>
+                            {% endif %}
+                            {% if page_id|add:1 < basic_info.number_of_category_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'blog:category' page_id|add:2 %}">{{ page_id|add:2 }}</a></li>
+                            {% endif %}
+                            {% if page_id < basic_info.number_of_category_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'blog:category' page_id|add:1 %}"><i class="fas fa-arrow-right"></i> 下一页</a></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+{% endblock %}

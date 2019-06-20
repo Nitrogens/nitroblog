@@ -19,11 +19,11 @@
             <span class="badge badge-warning"><i class="fas fa-calendar-day"></i> {{ article.create_time }}</span>
             {% get_element_from_index category_list forloop.counter0 as raw_category_list %}
             {% for category in raw_category_list %}
-            <a class="badge badge-dark" href="#"><i class="fas fa-cube"></i> {{ category.name }}</a>
+            <a class="badge badge-dark" href="{% url 'blog:category_detail' category.slug %}"><i class="fas fa-cube"></i> {{ category.name }}</a>
             {% endfor %}
             {% get_element_from_index tag_list forloop.counter0 as raw_tag_list %}
             {% for tag in raw_tag_list %}
-            <a class="badge badge-primary" href="#"><i class="fas fa-tag"></i> {{ tag.name }}</a>
+            <a class="badge badge-primary" href="{% url 'blog:tag_detail' tag.slug %}"><i class="fas fa-tag"></i> {{ tag.name }}</a>
             {% endfor %}
         </div>
     </div>

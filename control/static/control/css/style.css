@@ -1,0 +1,79 @@
+body {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif, Microsoft Yahei UI, "微软雅黑";
+    font-size: 16px;
+}
+
+.container-fluid {
+    padding-top: 20px;
+    font-size: 20px;
+}
+
+.footer {
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-top: 20px;
+    background-color: rgba(0,0,0,.03);
+}
+
+.page-navbar {
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 20px;
+}
+
+.page-navbar-title {
+    font-size: 28px;
+}
+
+.page-navbar-username {
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+.page-navbar-logout {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.cp-sidebar .fas, .cp-sidebar .far {
+    width: 15px;
+    margin-right: 20px;
+}
+
+.cp-dashboard-card {
+    margin-top: 10px;
+}
+
+.cp-dashboard-card .card-header {
+    font-size: 24px;
+}
+
+.cp-dashboard-card .card-header .fas, .cp-dashboard-card .card-header .far {
+    width: 15px;
+    margin-right: 20px;
+}
+
+.cp-dashboard-card .card-body {
+    font-size: 32px;
+}
+
+.cp-dashboard-card .btn {
+    font-size: 24px;
+}
+
+.cp-dashboard-info .fas, .cp-dashboard-info .far {
+    width: 15px;
+    margin-right: 20px;
+}
+
+.cp-dashboard-content-list {
+    margin-top: 15px;
+}
+
+.cp-dashboard-content-list .card {
+    margin-top: 10px;
+}
+
+.cp-content-list {
+    margin-top: 20px;
+}

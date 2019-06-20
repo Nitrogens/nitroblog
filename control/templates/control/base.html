@@ -1,0 +1,101 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="stylesheet" href="{% static 'control/css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static 'control/css/style.css' %}">
+        <link rel="stylesheet" href="{% static 'control/fontawesome/css/all.css' %}">
+        <title>Control Panel - Nitroblog</title>
+    </head>
+    <body>
+
+        <div class="page-navbar">
+
+            <nav class="navbar navbar-expand-lg navbar-dark shadow-sm bg-dark d-flex">
+
+                <a class="navbar-brand page-navbar-title" href="#">Nitroblog 控制面板</a>
+
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <span class="badge badge-primary page-navbar-username"><i class="fas fa-user"></i> {{ request.session.username }}</span>
+                            <a href="{% url 'control:logout' %}" class="btn btn-danger page-navbar-logout"><i class="fas fa-sign-out-alt"></i> 退出登录</a>
+                        </li>
+                    </ul>
+                </div>
+
+            </nav>
+
+        </div>
+
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-2">
+
+                    <div class="cp-sidebar">
+                        <div class="card text-dark bg-dark mb-3">
+                            <div class="card-header text-white">
+                                <i class="fas fa-border-all"></i>通用
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-tachometer-alt"></i>概要信息</a>
+                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-user-edit"></i>个人信息</a>
+                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-key"></i>修改密码</a>
+                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-cog"></i>系统设置</a>
+                            </ul>
+                        </div>
+
+                        <div class="card text-dark bg-dark mb-3">
+                            <div class="card-header text-white">
+                                <i class="fas fa-pen-nib"></i>撰写
+                            </div>
+                            <ul class="list-group ast-group-flush">
+                                <a href="#" class="list-group-item list-group-item-action"><i class="far fa-file-alt"></i>撰写文章</a>
+                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-file"></i>创建独立页面</a>
+                            </ul>
+                        </div>
+
+                        <div class="card text-dark bg-dark mb-3">
+                            <div class="card-header text-white">
+                                <i class="fas fa-sliders-h"></i>管理
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                <a href="#" class="list-group-item list-group-item-action"><i class="far fa-file-alt"></i>文章</a>
+                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-file"></i>独立页面</a>
+                                <a href="#" class="list-group-item list-group-item-action"><i class="far fa-comments"></i>评论</a>
+                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-cube"></i>分类</a>
+                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-tags"></i>标签</a>
+                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-user-friends"></i>用户</a>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="col-lg-10">
+
+                    {% block container %}
+                    {% endblock %}
+
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer py-3">
+            <span class="text-muted">Copyright &copy; 2019 Nitrogens.</span>
+        </footer>
+
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+        <script src="{% static 'control/js/bootstrap.min.js' %}"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
+        <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script type="text/javascript" src="{% static 'control/js/math.js' %}"></script>
+  </body>
+</html>

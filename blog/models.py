@@ -3,7 +3,7 @@ from django.db import models
 
 class User(models.Model):
     username = models.CharField(max_length=32, unique=True)
-    password = models.CharField(max_length=64)
+    password = models.CharField(max_length=256)
     mail = models.CharField(max_length=200, unique=True)
     url = models.CharField(max_length=200)
     nickname = models.CharField(max_length=32, unique=True)
@@ -22,6 +22,7 @@ class Content(models.Model):
     priority_id = models.IntegerField()
     author_id = models.ForeignKey(User, on_delete=models.CASCADE)
     type = models.CharField(max_length=16)
+    status = models.CharField(max_length=16, default='ok')
 
 
 class Comment(models.Model):

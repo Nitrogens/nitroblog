@@ -1,0 +1,72 @@
+{% extends 'control/base.html' %}
+{% block container %}
+{% load control_extras %}
+{% get_view_name request.path 2 as action_name %}
+{% get_view_name request.path 3 as view_name %}
+                    <div class="alert alert-primary" role="alert">
+                        {% if view_name == 'category' %}
+                            {% if action_name == 'create' %}
+                            <i class="fas fa-cube"></i> 创建分类
+                            {% else %}
+                            <i class="fas fa-cube"></i> 编辑分类
+                            {% endif %}
+                        {% else %}
+                            {% if action_name == 'create' %}
+                            <i class="fas fa-tags"></i> 创建标签
+                            {% else %}
+                            <i class="fas fa-tags"></i> 编辑标签
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    {% if response_message %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> {{ response_message }}！
+                    </div>
+                    {% endif %}
+
+                    {% if action_name == 'create' %}
+                        {% if view_name == 'category' %}
+                        <form action="{% url 'control:category_create' %}" method="POST">
+                        {% else %}
+                        <form action="{% url 'control:tag_create' %}" method="POST">
+                        {% endif %}
+                    {% else %}
+                        {% if view_name == 'category' %}
+                        <form action="{% url 'control:category_edit' category_info.id %}" method="POST">
+                        {% else %}
+                        <form action="{% url 'control:tag_edit' tag_info.id %}" method="POST">
+                        {% endif %}
+                    {% endif %}
+                        {% csrf_token %}
+                        <div class="form-group row">
+                            <label for="name" class="col-sm-2 col-form-label">名称</label>
+                            <div class="col-sm-10">
+                                {{ form_info.name }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="slug" class="col-sm-2 col-form-label">标识符</label>
+                            <div class="col-sm-10">
+                                {{ form_info.slug }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="description" class="col-sm-2 col-form-label">介绍</label>
+                            <div class="col-sm-10">
+                                {{ form_info.description }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="priority_id" class="col-sm-2 col-form-label">优先级</label>
+                            <div class="col-sm-10">
+                                {{ form_info.priority_id }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-sm-10">
+                                <button type="submit" class="btn btn-primary">提交</button>
+                            </div>
+                        </div>
+                    </form>
+{% endblock %}

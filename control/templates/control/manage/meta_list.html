@@ -1,0 +1,134 @@
+{% extends 'control/base.html' %}
+{% load control_extras %}
+{% block container %}
+{% get_view_name request.path 3 as view_name %}
+                    <div class="alert alert-primary" role="alert">
+                        {% if view_name == 'category' %}
+                        <i class="fas fa-cube"></i> 分类管理
+                        {% else %}
+                        <i class="fas fa-tags"></i> 标签管理
+                        {% endif %}
+                    </div>
+
+                    {% if response_message %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> {{ response_message }}！
+                    </div>
+                    {% endif %}
+
+                    <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
+                        {% if view_name == 'category' %}
+                        <form method="GET" action="{% url 'control:category_list' %}" class="input-group input-group-lg mr-2">
+                        {% else %}
+                        <form method="GET" action="{% url 'control:tag_list' %}" class="input-group input-group-lg mr-2">
+                        {% endif %}
+                            {{ form_info.keyword }}
+                            <div class="btn-group btn-group-lg mr-2" role="group" aria-label="Basic example">
+                                <button type="submit" class="btn btn-secondary">筛选</button>
+                            </div>
+                        </form>
+                        {% if view_name == 'category' %}
+                        <div class="btn-group btn-group-lg mr-2" role="group" aria-label="Basic example">
+                            <a href="{% url 'control:category_create' %}" class="btn btn-primary">新建分类</a>
+                        </div>
+                        {% else %}
+                        <div class="btn-group btn-group-lg mr-2" role="group" aria-label="Basic example">
+                            <a href="{% url 'control:tag_create' %}" class="btn btn-primary">新建标签</a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if view_name == 'category' %}
+                    <form method="POST" action="{% url 'control:category_list' %}">
+                    {% else %}
+                    <form method="POST" action="{% url 'control:tag_list' %}">
+                    {% endif %}
+                        {% csrf_token %}
+                        <div class="btn-group btn-group-lg" role="group" aria-label="Button group with nested dropdown">
+                            <div class="btn-group btn-group-lg" role="group">
+                                <button id="btnGroupDrop1" type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    选中项
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-lg" aria-labelledby="btnGroupDrop1">
+                                    <button type="submit" class="dropdown-item dropdown-item-lg">删除</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <table class="table table-striped table-hover cp-content-list">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th scope="col"><input type="checkbox" id="article_cid"></th>
+                                    <th scope="col">名称</th>
+                                    <th scope="col">标识符</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for meta in meta_list %}
+                                <tr>
+                                    <td><input type="checkbox" value="{{ meta.0 }}" name="article_cid[]"></td>
+                                    {% if view_name == 'category' %}
+                                    <td>{{ meta.1 }} <a class="badge badge-dark" href="{% url 'control:category_edit' meta.0 %}" target="_blank"><i class="fas fa-pen-nib"></i> 编辑</a></td>
+                                    {% else %}
+                                    <td>{{ meta.1 }} <a class="badge badge-dark" href="{% url 'control:tag_edit' meta.0 %}" target="_blank"><i class="fas fa-pen-nib"></i> 编辑</a></td>
+                                    {% endif %}
+                                    <td>{{ meta.2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </form>
+                    {% if view_name == 'category' %}
+                    <nav>
+                        <ul class="pagination">
+                            {% if page_id > 1 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:category_list' page_id|add:-1 %}"><i class="fas fa-arrow-left"></i> 上一页</a></li>
+                            {% endif %}
+                            {% if page_id > 2 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:category_list' page_id|add:-2 %}">{{ page_id|add:-2 }}</a></li>
+                            {% endif %}
+                            {% if page_id > 1 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:category_list' page_id|add:-1 %}">{{ page_id|add:-1 }}</a></li>
+                            {% endif %}
+
+                            <li class="page-item active"><a class="page-link" href="#">{{ page_id }}</a></li>
+
+                            {% if page_id < basic_info.number_of_category_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:category_list' page_id|add:1 %}">{{ page_id|add:1 }}</a></li>
+                            {% endif %}
+                            {% if page_id|add:1 < basic_info.number_of_category_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:category_list' page_id|add:2 %}">{{ page_id|add:2 }}</a></li>
+                            {% endif %}
+                            {% if page_id < basic_info.number_of_category_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:category_list' page_id|add:1 %}"><i class="fas fa-arrow-right"></i> 下一页</a></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% else %}
+                    <nav>
+                        <ul class="pagination">
+                            {% if page_id > 1 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:tag_list' page_id|add:-1 %}"><i class="fas fa-arrow-left"></i> 上一页</a></li>
+                            {% endif %}
+                            {% if page_id > 2 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:tag_list' page_id|add:-2 %}">{{ page_id|add:-2 }}</a></li>
+                            {% endif %}
+                            {% if page_id > 1 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:tag_list' page_id|add:-1 %}">{{ page_id|add:-1 }}</a></li>
+                            {% endif %}
+
+                             <li class="page-item active"><a class="page-link" href="#">{{ page_id }}</a></li>
+
+                            {% if page_id < basic_info.number_of_tag_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:tag_list' page_id|add:1 %}">{{ page_id|add:1 }}</a></li>
+                            {% endif %}
+                            {% if page_id|add:1 < basic_info.number_of_tag_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:tag_list' page_id|add:2 %}">{{ page_id|add:2 }}</a></li>
+                            {% endif %}
+                            {% if page_id < basic_info.number_of_tag_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:tag_list' page_id|add:1 %}"><i class="fas fa-arrow-right"></i> 下一页</a></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+{% endblock %}

@@ -15,9 +15,11 @@
                                     <span class="cp-dashboard-statnumber">{{ number.article }}</span>
                                     <span class="cp-dashboard-unit">篇</span>
                                 </div>
+                                {% if request.session.user_group == 'administrator' or request.session.user_type == 'writer' %}
                                 <div class="card-footer text-muted">
-                                    <a href="#" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
+                                    <a href="{% url 'control:article_list' %}" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -30,9 +32,11 @@
                                     <span class="cp-dashboard-statnumber">{{ number.comment }}</span>
                                     <span class="cp-dashboard-unit">条</span>
                                 </div>
+                                {% if request.session.user_group == 'administrator' or request.session.user_type == 'writer' %}
                                 <div class="card-footer text-muted">
                                     <a href="#" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -45,9 +49,11 @@
                                     <span class="cp-dashboard-statnumber">{{ number.category }}</span>
                                     <span class="cp-dashboard-unit">个</span>
                                 </div>
+                                {% if request.session.user_group == 'administrator' or request.session.user_type == 'writer' %}
                                 <div class="card-footer text-muted">
-                                    <a href="#" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
+                                    <a href="{% url 'control:category_list' %}" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -60,14 +66,17 @@
                                     <span class="cp-dashboard-statnumber">{{ number.tag }}</span>
                                     <span class="cp-dashboard-unit">个</span>
                                 </div>
+                                {% if request.session.user_group == 'administrator' or request.session.user_type == 'writer' %}
                                 <div class="card-footer text-muted">
-                                    <a href="#" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
+                                    <a href="{% url 'control:tag_list' %}" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
 
                     </div>
 
+                    {% if request.session.user_group == 'administrator' %}
                     <div class="cp-dashboard-content-list row">
                         <div class="col-lg">
                             <div class="card cp-dashboard-card">
@@ -76,7 +85,7 @@
                                 </div>
                                 <ul class="list-group list-group-flush">
                                     {% for article in recent_article_list %}
-                                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">{{ article.0 }}</a>
+                                    <a href="{% url 'control:article_edit' article.2 %}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">{{ article.0 }}</a>
                                     {% endfor %}
                                 </ul>
                             </div>
@@ -95,4 +104,5 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
 {% endblock %}

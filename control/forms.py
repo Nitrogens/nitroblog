@@ -58,3 +58,14 @@ class PageCreateForm(forms.Form):
     summary = forms.CharField(label='摘要', widget=forms.Textarea(attrs={'class': 'form-control'}))
     text = forms.CharField(label='内容', widget=forms.Textarea(attrs={'class': 'form-control'}))
     priority_id = forms.IntegerField(label='优先级', widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+
+class MetaFilterForm(forms.Form):
+    keyword = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '关键字',}))
+
+
+class MetaCreateForm(forms.Form):
+    name = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control',}))
+    slug = forms.SlugField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control',}))
+    description = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control',}))
+    priority_id = forms.IntegerField(widget=forms.TextInput(attrs={'class': 'form-control'}))

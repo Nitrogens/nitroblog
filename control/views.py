@@ -484,7 +484,8 @@ def article_edit(request, article_id):
             summary = "%s",
             text = "%s",
             edit_time = NOW()
-            WHERE id = %s;
+            WHERE id = %s
+            AND type = "article";
             ''' % (request.POST['title'], request.POST['slug'],
                    request.POST['summary'], request.POST['text'], article_info.id)
             try:
@@ -657,7 +658,8 @@ def page_edit(request, page_id):
             text = "%s",
             edit_time = NOW(),
             priority_id = %s
-            WHERE id = %s;
+            WHERE id = %s
+            AND type = "page";
             ''' % (request.POST['title'], request.POST['slug'], request.POST['summary'],
                    request.POST['text'], request.POST['priority_id'], page_info.id)
             try:
@@ -687,3 +689,331 @@ def page_edit(request, page_id):
 
     form_info = PageCreateForm(page_info_dict)
     return render(request, 'control/manage/page_create.html', locals())
+
+
+def category_list(request, page_id=1):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    if request.method == 'POST':
+        category_id_list = request.POST.getlist('article_cid[]')
+        category_id_set = ''
+        if category_id_list:
+            flag = 0
+            for category_id in category_id_list:
+                if flag > 0:
+                    category_id_set += ', '
+                category_id_set += category_id
+                flag += 1
+            operation_query = '''
+            SELECT * FROM blog_meta
+            WHERE id in (%s);
+            ''' % category_id_set
+
+            try:
+                category_list = Meta.objects.raw(operation_query)
+                for category in category_list:
+                    category.delete()
+            except (KeyError, Content.DoesNotExist):
+                response_message = '删除失败！'
+
+    keyword = request.GET.get('keyword')
+
+    if keyword is None:
+        keyword = ''
+
+    page_size = 10
+    basic_info = get_basic_info()
+    basic_info['number_of_category'] = Meta.objects.filter(type='category').count()
+    basic_info['number_of_category_page'] = ceil(basic_info['number_of_category'], page_size)
+    if page_id <= 0 or page_id > basic_info['number_of_category_page']:
+        raise Http404('Could not found this page!')
+
+    left_range = 0 + page_size * (page_id - 1)
+
+    meta_list_query = '''
+    SELECT id, name, slug
+    FROM blog_meta
+    WHERE type = "category"
+    ORDER BY priority_id
+    '''
+
+    if keyword != '':
+        meta_list_query += '''
+        AND name LIKE "%%%%%s%%%%"
+        ''' % keyword
+
+    meta_list_query += '''
+    LIMIT %s, %s;
+    ''' % (left_range, page_size)
+
+    cursor = connection.cursor()
+    cursor.execute(meta_list_query)
+    meta_list = cursor.fetchall()
+
+    form_info = MetaFilterForm({'keyword': keyword,})
+
+    return render(request, 'control/manage/meta_list.html', locals())
+
+
+def category_create(request):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = MetaCreateForm(request.POST)
+        if form_info.is_valid():
+            insert_query = '''
+            INSERT INTO blog_meta
+            VALUES (NULL, "%s", "%s", "category", "%s", %s);
+            ''' % (request.POST['name'], request.POST['slug'],
+                   request.POST['description'], request.POST['priority_id'])
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+                return HttpResponseRedirect(reverse('control:category_list', args=()))
+            except IntegrityError:
+                response_message = '标识符已被占用！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/meta_create.html', locals())
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/meta_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/meta_create.html', locals())
+
+    form_info = MetaCreateForm()
+    return render(request, 'control/manage/meta_create.html', locals())
+
+
+def category_edit(request, category_id):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    category_info = None
+
+    try:
+        category_info = Meta.objects.get(id=category_id, type='category')
+    except (KeyError, Content.DoesNotExist):
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = MetaCreateForm(request.POST)
+        if form_info.is_valid():
+            insert_query = '''
+            UPDATE blog_meta
+            SET name = "%s",
+            slug = "%s",
+            description = "%s",
+            priority_id = %s
+            WHERE id = %s
+            AND type = "category";
+            ''' % (request.POST['name'], request.POST['slug'], request.POST['description'],
+                   request.POST['priority_id'], category_info.id)
+            print(insert_query)
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+                return HttpResponseRedirect(reverse('control:category_list', args=()))
+            except IntegrityError:
+                response_message = '标识符已被占用！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/meta_create.html', locals())
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/meta_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/meta_create.html', locals())
+
+    category_info_dict = {
+        'name': category_info.name,
+        'slug': category_info.slug,
+        'description': category_info.description,
+        'priority_id': category_info.priority_id,
+    }
+
+    form_info = MetaCreateForm(category_info_dict)
+    return render(request, 'control/manage/meta_create.html', locals())
+
+
+def tag_list(request, page_id=1):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    if request.method == 'POST':
+        tag_id_list = request.POST.getlist('article_cid[]')
+        tag_id_set = ''
+        if tag_id_list:
+            flag = 0
+            for tag_id in tag_id_list:
+                if flag > 0:
+                    tag_id_set += ', '
+                tag_id_set += tag_id
+                flag += 1
+            operation_query = '''
+            SELECT * FROM blog_meta
+            WHERE id in (%s);
+            ''' % tag_id_set
+
+            try:
+                tag_list = Meta.objects.raw(operation_query)
+                for tag in tag_list:
+                    tag.delete()
+            except (KeyError, Content.DoesNotExist):
+                response_message = '删除失败！'
+
+    keyword = request.GET.get('keyword')
+
+    if keyword is None:
+        keyword = ''
+
+    page_size = 10
+    basic_info = get_basic_info()
+    basic_info['number_of_tag'] = Meta.objects.filter(type='tag').count()
+    basic_info['number_of_tag_page'] = ceil(basic_info['number_of_tag'], page_size)
+    if page_id <= 0 or page_id > basic_info['number_of_tag_page']:
+        raise Http404('Could not found this page!')
+
+    left_range = 0 + page_size * (page_id - 1)
+
+    meta_list_query = '''
+    SELECT id, name, slug
+    FROM blog_meta
+    WHERE type = "tag"
+    ORDER BY priority_id
+    '''
+
+    if keyword != '':
+        meta_list_query += '''
+        AND name LIKE "%%%%%s%%%%"
+        ''' % keyword
+
+    meta_list_query += '''
+    LIMIT %s, %s;
+    ''' % (left_range, page_size)
+
+    cursor = connection.cursor()
+    cursor.execute(meta_list_query)
+    meta_list = cursor.fetchall()
+
+    form_info = MetaFilterForm({'keyword': keyword,})
+
+    return render(request, 'control/manage/meta_list.html', locals())
+
+
+def tag_create(request):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = MetaCreateForm(request.POST)
+        if form_info.is_valid():
+            insert_query = '''
+            INSERT INTO blog_meta
+            VALUES (NULL, "%s", "%s", "tag", "%s", %s);
+            ''' % (request.POST['name'], request.POST['slug'],
+                   request.POST['description'], request.POST['priority_id'])
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+                return HttpResponseRedirect(reverse('control:tag_list', args=()))
+            except IntegrityError:
+                response_message = '标识符已被占用！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/meta_create.html', locals())
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/meta_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/meta_create.html', locals())
+
+    form_info = MetaCreateForm()
+    return render(request, 'control/manage/meta_create.html', locals())
+
+
+def tag_edit(request, tag_id):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    tag_info = None
+
+    try:
+        tag_info = Meta.objects.get(id=tag_id, type='tag')
+    except (KeyError, Content.DoesNotExist):
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = MetaCreateForm(request.POST)
+        if form_info.is_valid():
+            insert_query = '''
+            UPDATE blog_meta
+            SET name = "%s",
+            slug = "%s",
+            description = "%s",
+            priority_id = %s
+            WHERE id = %s
+            AND type = "tag";
+            ''' % (request.POST['name'], request.POST['slug'], request.POST['description'],
+                   request.POST['priority_id'], tag_info.id)
+            print(insert_query)
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+                return HttpResponseRedirect(reverse('control:tag_list', args=()))
+            except IntegrityError:
+                response_message = '标识符已被占用！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/meta_create.html', locals())
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/meta_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/meta_create.html', locals())
+
+    tag_info_dict = {
+        'name': tag_info.name,
+        'slug': tag_info.slug,
+        'description': tag_info.description,
+        'priority_id': tag_info.priority_id,
+    }
+
+    form_info = MetaCreateForm(tag_info_dict)
+    return render(request, 'control/manage/meta_create.html', locals())

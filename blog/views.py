@@ -120,11 +120,10 @@ def category(request, page_id=1):
         raise Http404('Could not found this page!')
     left_range = 0 + basic_info['meta_page_size'] * (page_id - 1)
 
-    category_query = '''SELECT blog_meta.id, blog_meta.name, blog_meta.slug, blog_meta.description, COUNT(blog_meta.id)
-                        FROM blog_meta, blog_relationship, blog_content 
-                        WHERE blog_meta.id = blog_relationship.meta_id_id 
-                        AND blog_content.id = blog_relationship.content_id_id
-                        AND blog_meta.type = "category"
+    category_query = '''SELECT blog_meta.id, blog_meta.name, blog_meta.slug, blog_meta.description, COUNT(blog_content.id)
+                        FROM blog_meta LEFT OUTER JOIN (blog_content, blog_relationship) ON (blog_meta.id = blog_relationship.meta_id_id
+                        AND blog_content.id = blog_relationship.content_id_id)
+                        WHERE blog_meta.type = "category"
                         GROUP BY blog_meta.id
                         ORDER BY blog_meta.priority_id
                         LIMIT %s, %s;
@@ -202,14 +201,14 @@ def tag(request, page_id=1):
         raise Http404('Could not found this page!')
     left_range = 0 + basic_info['meta_page_size'] * (page_id - 1)
 
-    tag_query = '''SELECT blog_meta.id, blog_meta.name, blog_meta.slug, blog_meta.description, COUNT(blog_meta.id)
-                   FROM blog_meta, blog_relationship, blog_content 
-                   WHERE blog_meta.id = blog_relationship.meta_id_id 
-                   AND blog_content.id = blog_relationship.content_id_id
-                   AND blog_meta.type = "tag"
-                   GROUP BY blog_meta.id
-                   ORDER BY blog_meta.priority_id
-                   LIMIT %s, %s;
+    tag_query = '''
+    SELECT blog_meta.id, blog_meta.name, blog_meta.slug, blog_meta.description, COUNT(blog_content.id)
+    FROM blog_meta LEFT OUTER JOIN (blog_content, blog_relationship) ON (blog_meta.id = blog_relationship.meta_id_id
+    AND blog_content.id = blog_relationship.content_id_id)
+    WHERE blog_meta.type = "tag"
+    GROUP BY blog_meta.id
+    ORDER BY blog_meta.priority_id
+    LIMIT %s, %s;
     ''' % (left_range, basic_info['meta_page_size'])
 
     cursor = connection.cursor()

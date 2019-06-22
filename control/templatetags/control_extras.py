@@ -12,9 +12,10 @@ def get_element_from_index(source_list, index):
 
 
 @register.simple_tag
-def get_view_name(source_str):
+def get_view_name(source_str, pos):
     str_list = source_str.split('/')
-    return str_list[1]
+    print(str_list[pos])
+    return str_list[pos]
 
 
 @register.simple_tag

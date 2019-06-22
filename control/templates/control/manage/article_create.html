@@ -1,0 +1,54 @@
+{% extends 'control/base.html' %}
+{% load control_extras %}
+{% block container %}
+                    <div class="alert alert-primary" role="alert">
+                        <i class="far fa-file-alt"></i> {% if request.path == '/control/create/article/' %}撰写文章{% else %}修改文章{% endif %}
+                    </div>
+
+                    {% if response_message %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> {{ response_message }}！
+                    </div>
+                    {% endif %}
+
+                    {% if request.path == '/control/create/article/' %}
+                    <form method="POST" action="{% url 'control:article_create' %}">
+                    {% else %}
+                    <form method="POST" action="{% url 'control:article_edit' article_info.id %}">
+                    {% endif %}
+                        {% csrf_token %}
+                        <div class="form-row">
+                            <div class="form-group col-md-9">
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        {{ form_info.title.label_tag }}
+                                        {{ form_info.title }}
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        {{ form_info.slug.label_tag }}
+                                        {{ form_info.slug }}
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    {{ form_info.summary.label_tag }}
+                                    {{ form_info.summary }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form_info.text.label_tag }}
+                                    {{ form_info.text }}
+                                </div>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <div class="form-group">
+                                    {{ form_info.category.label_tag }}
+                                    {{ form_info.category }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form_info.tag.label_tag }}
+                                    {{ form_info.tag }}
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">提交</button>
+                    </form>
+{% endblock %}

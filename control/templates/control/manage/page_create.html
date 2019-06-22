@@ -1,0 +1,48 @@
+{% extends 'control/base.html' %}
+{% load control_extras %}
+{% block container %}
+                    <div class="alert alert-primary" role="alert">
+                        <i class="fas fa-file"></i> {% if request.path == '/control/create/page/' %}创建独立页面{% else %}修改独立页面{% endif %}
+                    </div>
+
+                    {% if response_message %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> {{ response_message }}！
+                    </div>
+                    {% endif %}
+
+                    {% if request.path == '/control/create/page/' %}
+                    <form method="POST" action="{% url 'control:page_create' %}">
+                    {% else %}
+                    <form method="POST" action="{% url 'control:page_edit' page_info.id %}">
+                    {% endif %}
+                        {% csrf_token %}
+                        <div class="form-row">
+                            <div class="form-group col-md-12">
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        {{ form_info.title.label_tag }}
+                                        {{ form_info.title }}
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        {{ form_info.slug.label_tag }}
+                                        {{ form_info.slug }}
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    {{ form_info.summary.label_tag }}
+                                    {{ form_info.summary }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form_info.text.label_tag }}
+                                    {{ form_info.text }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form_info.priority_id.label_tag }}
+                                    {{ form_info.priority_id }}
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">提交</button>
+                    </form>
+{% endblock %}

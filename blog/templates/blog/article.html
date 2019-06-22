@@ -10,6 +10,7 @@
         </article>
         <div class="card-footer">
             <span class="badge badge-warning"><i class="fas fa-calendar-day"></i> {{ article_info.create_time }}</span>
+            <span class="badge badge-success"><i class="fas fa-user"></i> {{ article_info.author_id.nickname }}</span>
             {% for category in category_list %}
             <a class="badge badge-dark" href="{% url 'blog:category_detail' category.slug %}"><i class="fas fa-cube"></i> {{ category.name }}</a>
             {% endfor %}

@@ -22,7 +22,6 @@ class Content(models.Model):
     priority_id = models.IntegerField()
     author_id = models.ForeignKey(User, on_delete=models.CASCADE)
     type = models.CharField(max_length=16)
-    status = models.CharField(max_length=16, default='ok')
 
 
 class Comment(models.Model):

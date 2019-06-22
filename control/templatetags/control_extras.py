@@ -20,3 +20,13 @@ def get_view_name(source_str):
 @register.simple_tag
 def str_cat(a, b):
     return a + b
+
+
+@register.simple_tag
+def get_user_nickname_by_id(user_id):
+    return User.objects.get(id=user_id).nickname
+
+
+@register.simple_tag
+def str_to_int(source):
+    return int(source)

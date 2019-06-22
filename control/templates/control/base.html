@@ -44,9 +44,9 @@
                                 <i class="fas fa-border-all"></i>通用
                             </div>
                             <ul class="list-group list-group-flush">
-                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-tachometer-alt"></i>概要信息</a>
-                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-user-edit"></i>个人信息</a>
-                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-key"></i>修改密码</a>
+                                <a href="{% url 'control:dashboard' %}" class="list-group-item list-group-item-action"><i class="fas fa-tachometer-alt"></i>概要信息</a>
+                                <a href="{% url 'control:personal_information' %}" class="list-group-item list-group-item-action"><i class="fas fa-user-edit"></i>个人信息</a>
+                                <a href="{% url 'control:change_password' %}" class="list-group-item list-group-item-action"><i class="fas fa-key"></i>修改密码</a>
                                 <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-cog"></i>系统设置</a>
                             </ul>
                         </div>
@@ -56,8 +56,8 @@
                                 <i class="fas fa-pen-nib"></i>撰写
                             </div>
                             <ul class="list-group ast-group-flush">
-                                <a href="#" class="list-group-item list-group-item-action"><i class="far fa-file-alt"></i>撰写文章</a>
-                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-file"></i>创建独立页面</a>
+                                <a href="{% url 'control:article_create' %}" class="list-group-item list-group-item-action"><i class="far fa-file-alt"></i>撰写文章</a>
+                                <a href="{% url 'control:page_create' %}" class="list-group-item list-group-item-action"><i class="fas fa-file"></i>创建独立页面</a>
                             </ul>
                         </div>
 
@@ -66,8 +66,8 @@
                                 <i class="fas fa-sliders-h"></i>管理
                             </div>
                             <ul class="list-group list-group-flush">
-                                <a href="#" class="list-group-item list-group-item-action"><i class="far fa-file-alt"></i>文章</a>
-                                <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-file"></i>独立页面</a>
+                                <a href="{% url 'control:article_list' %}" class="list-group-item list-group-item-action"><i class="far fa-file-alt"></i>文章</a>
+                                <a href="{% url 'control:page_list' %}" class="list-group-item list-group-item-action"><i class="fas fa-file"></i>独立页面</a>
                                 <a href="#" class="list-group-item list-group-item-action"><i class="far fa-comments"></i>评论</a>
                                 <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-cube"></i>分类</a>
                                 <a href="#" class="list-group-item list-group-item-action"><i class="fas fa-tags"></i>标签</a>
@@ -97,5 +97,6 @@
         <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
         <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
         <script type="text/javascript" src="{% static 'control/js/math.js' %}"></script>
+        <script type="text/javascript" src="{% static 'control/js/control.js' %}"></script>
   </body>
 </html>

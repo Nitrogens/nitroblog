@@ -3,12 +3,13 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext
 from django.urls import reverse
 from django.db.models import F
-from django.db import connection
-import hashlib, base64
+from django.db import connection, ProgrammingError, IntegrityError
+import hashlib, base64, datetime
 
 
 from blog.models import *
-from .forms import LoginForm
+from blog.views import get_basic_info, ceil, get_content_category_list
+from .forms import *
 
 
 def password_encrypt(password, salt='segmentation_fault'):
@@ -41,6 +42,9 @@ def login(request, source_url=None):
                     request.session['is_login'] = True
                     request.session['username'] = user.username
                     request.session['user_group'] = user.group
+                    request.session['user_id'] = user.id
+                    user.last_login_time = datetime.datetime.now()
+                    user.save()
                     if source_url is None:
                         return HttpResponseRedirect(reverse('control:dashboard', args=()))
                     else:
@@ -72,6 +76,13 @@ def logout(request, destination_url=None):
         return HttpResponseRedirect(reverse('control:login', args=()))
     else:
         return HttpResponseRedirect(destination_url)
+
+
+def forbidden(request):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    return render(request, 'control/forbidden.html', locals())
 
 
 def dashboard(request):
@@ -113,4 +124,566 @@ def dashboard(request):
         'recent_comment_list': recent_comment_list,
     }
 
-    return render(request, 'control/dashboard.html', context)
+    return render(request, 'control/general/dashboard.html', context)
+
+
+def personal_information(request):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = PersonalInformationForm(request.POST)
+        if form_info.is_valid():
+            operation_query = '''
+            UPDATE blog_user
+            SET mail = "%s",
+            url = "%s",
+            nickname = "%s"
+            WHERE username = "%s";
+            ''' % (form_info.cleaned_data['email'], form_info.cleaned_data['url'], form_info.cleaned_data['nickname'], request.session['username'])
+            try:
+                cursor = connection.cursor()
+                cursor.execute(operation_query)
+                response_message = '更新成功！'
+            except ProgrammingError:
+                response_message = '更新失败！'
+        else:
+            response_message = '请检查输入格式！'
+
+    user_info = User.objects.get(username=request.session['username'])
+    form_info = PersonalInformationForm()
+    form_info['email'].initial = user_info.mail
+    form_info['url'].initial = user_info.url
+    form_info['nickname'].initial = user_info.nickname
+    return render(request, 'control/general/personal_information.html', locals())
+
+
+def change_password(request):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = PasswordChangeForm(request.POST)
+        if form_info.is_valid():
+            user = User.objects.get(username=request.session['username'])
+            if user.password == password_encrypt(form_info.cleaned_data['current_password']) and form_info.cleaned_data['new_password'] == form_info.cleaned_data['new_password_confirm']:
+                try:
+                    user.password = password_encrypt(form_info.cleaned_data['new_password'])
+                    user.save()
+                    response_message = '修改成功！'
+                except (ProgrammingError, NameError):
+                    response_message = '修改失败！'
+            else:
+                response_message = '密码输入错误！'
+        else:
+            response_message = '请检查输入格式！'
+
+    form_info = PasswordChangeForm()
+    return render(request, 'control/general/change_password.html', locals())
+
+
+def article_list(request, page_id=1):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        article_id_list = request.POST.getlist('article_cid[]')
+        article_id_set = ''
+        if article_id_list:
+            flag = 0
+            for article_id in article_id_list:
+                if flag > 0:
+                    article_id_set += ', '
+                article_id_set += article_id
+                flag += 1
+            operation_query = '''
+            SELECT * FROM blog_content
+            WHERE id in (%s) 
+            ''' % article_id_set
+            if request.session['user_group'] != 'administrator':
+                operation_query += '''
+                AND author_id_id = %s
+                ''' % request.session['user_id']
+
+            try:
+                article_list = Content.objects.raw(operation_query)
+                for article in article_list:
+                    article.delete()
+            except (NameError, ProgrammingError):
+                response_message = '删除失败！'
+
+    keyword = request.GET.get('keyword')
+    category_id = request.GET.get('category')
+
+    if keyword is None:
+        keyword = ''
+    if category_id is None:
+        category_id = 0
+    else:
+        category_id = int(category_id)
+
+    page_size = 10
+    basic_info = get_basic_info()
+    basic_info['number_of_article'] = Content.objects.filter(type='article').count()
+    basic_info['number_of_article_page'] = ceil(basic_info['number_of_article'], page_size)
+    if page_id <= 0 or page_id > basic_info['number_of_article_page']:
+        raise Http404('Could not found this page!')
+
+    left_range = 0 + page_size * (page_id - 1)
+
+    article_list_query = '''
+    SELECT blog_content.id, blog_content.title, blog_content.edit_time, 
+    COUNT(blog_comment.content_id_id), blog_content.slug, blog_content.author_id_id
+    FROM blog_content LEFT OUTER JOIN blog_comment
+    ON (blog_content.id = blog_comment.content_id_id)
+    WHERE blog_content.type = "article" 
+    '''
+
+    if request.session['user_group'] != 'administrator':
+        article_list_query += '''
+        AND blog_content.author_id_id = %s
+        ''' % request.session['user_id']
+
+    if keyword != '':
+        article_list_query += '''
+        AND blog_content.title LIKE "%%%%%s%%%%"
+        ''' % keyword
+
+    if category_id != 0:
+        article_list_query += '''
+        AND blog_content.id in (
+            SELECT content_id_id
+            FROM blog_relationship
+            WHERE meta_id_id = %s
+        )
+        ''' % category_id
+
+    article_list_query += '''
+    GROUP BY blog_content.id
+    ORDER BY blog_content.edit_time DESC
+    LIMIT %s, %s;
+    ''' % (left_range, page_size)
+
+    cursor = connection.cursor()
+    cursor.execute(article_list_query)
+    article_list = cursor.fetchall()
+    category_list_of_content = []
+
+    for article_item in article_list:
+        raw_category_list = get_content_category_list(article_item[0])
+        category_list_of_content.append(raw_category_list)
+
+    form_info = ArticleFilterForm({'keyword': keyword, 'category': category_id,})
+
+    return render(request, 'control/manage/article_list.html', locals())
+
+
+def page_list(request, page_id=1):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    if request.method == 'POST':
+        article_id_list = request.POST.getlist('article_cid[]')
+        article_id_set = ''
+        if article_id_list:
+            flag = 0
+            for article_id in article_id_list:
+                if flag > 0:
+                    article_id_set += ', '
+                article_id_set += article_id
+                flag += 1
+            operation_query = '''
+            SELECT * FROM blog_content
+            WHERE id in (%s) 
+            ''' % article_id_set
+            if request.session['user_group'] != 'administrator':
+                operation_query += '''
+                AND author_id_id = %s
+                ''' % request.session['user_id']
+
+            try:
+                article_list = Content.objects.raw(operation_query)
+                for article in article_list:
+                    article.delete()
+            except (KeyError, Content.DoesNotExist):
+                response_message = '删除失败！'
+
+    keyword = request.GET.get('keyword')
+
+    if keyword is None:
+        keyword = ''
+
+    page_size = 10
+    basic_info = get_basic_info()
+    basic_info['number_of_article'] = Content.objects.filter(type='page').count()
+    basic_info['number_of_article_page'] = ceil(basic_info['number_of_article'], page_size)
+    if page_id <= 0 or page_id > basic_info['number_of_article_page']:
+        raise Http404('Could not found this page!')
+
+    left_range = 0 + page_size * (page_id - 1)
+
+    article_list_query = '''
+    SELECT blog_content.id, blog_content.title, blog_content.edit_time, 
+    COUNT(blog_comment.content_id_id), blog_content.slug, blog_content.author_id_id
+    FROM blog_content LEFT OUTER JOIN blog_comment
+    ON (blog_content.id = blog_comment.content_id_id)
+    WHERE blog_content.type = "page" 
+    '''
+
+    if request.session['user_group'] != 'administrator':
+        article_list_query += '''
+        AND blog_content.author_id_id = %s
+        ''' % request.session['user_id']
+
+    if keyword != '':
+        article_list_query += '''
+        AND blog_content.title LIKE "%%%%%s%%%%"
+        ''' % keyword
+
+    article_list_query += '''
+    GROUP BY blog_content.id
+    ORDER BY blog_content.edit_time DESC
+    LIMIT %s, %s;
+    ''' % (left_range, page_size)
+
+    cursor = connection.cursor()
+    cursor.execute(article_list_query)
+    article_list = cursor.fetchall()
+
+    form_info = ArticleFilterForm({'keyword': keyword,})
+
+    return render(request, 'control/manage/page_list.html', locals())
+
+
+def article_create(request):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = ArticleCreateForm(request.POST)
+        if form_info.is_valid():
+            try:
+                cursor = connection.cursor()
+                cursor.execute('BEGIN;')
+            except ProgrammingError:
+                response_message = '操作失败！'
+                return render(request, 'control/manage/article_create.html', locals())
+
+            insert_query = '''
+            INSERT INTO blog_content
+            VALUES (NULL, "%s", "%s", NOW(), NOW(), "%s", "%s", 0, "article", %s);
+            ''' % (request.POST['title'], request.POST['slug'],
+                   request.POST['summary'], request.POST['text'], request.session['user_id'])
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+            except IntegrityError:
+                response_message = '标识符已被占用！'
+                cursor = connection.cursor()
+                cursor.execute('ROLLBACK;')
+                return render(request, 'control/manage/article_create.html', locals())
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                cursor.execute('ROLLBACK;')
+                return render(request, 'control/manage/article_create.html', locals())
+
+            article_id = Content.objects.get(slug=request.POST['slug']).id
+
+            category_id_list = request.POST.getlist('category')
+            tag_id_list = request.POST.getlist('tag')
+            meta_id_list = category_id_list + tag_id_list
+
+            if meta_id_list:
+                meta_id_set = ''
+                flag = 0
+                for meta_id in meta_id_list:
+                    if flag > 0:
+                        meta_id_set += ', '
+                    meta_id_set += ('(NULL, ' + str(article_id) + ', ' + str(meta_id) + ')')
+                    flag += 1
+                meta_insert_query = '''
+                INSERT INTO blog_relationship
+                VALUES %s;
+                ''' % meta_id_set
+                try:
+                    cursor = connection.cursor()
+                    cursor.execute(meta_insert_query)
+                except ProgrammingError:
+                    response_message = '操作失败！'
+                    cursor = connection.cursor()
+                    cursor.execute('ROLLBACK;')
+                    return render(request, 'control/manage/article_create.html', locals())
+
+            try:
+                cursor = connection.cursor()
+                cursor.execute('COMMIT;')
+                return HttpResponseRedirect(reverse('control:article_list', args=()))
+            except ProgrammingError:
+                response_message = '操作失败！'
+                return render(request, 'control/manage/article_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/article_create.html', locals())
+
+    form_info = ArticleCreateForm()
+    return render(request, 'control/manage/article_create.html', locals())
+
+
+def article_edit(request, article_id):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    article_info = None
+
+    try:
+        article_info = Content.objects.get(id=article_id, type='article')
+    except (KeyError, Content.DoesNotExist):
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    if request.session['user_group'] == 'writer' and article_info.author_id.id != request.session['user_id']:
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = ArticleCreateForm(request.POST)
+        if form_info.is_valid():
+            try:
+                cursor = connection.cursor()
+                cursor.execute('BEGIN;')
+            except ProgrammingError:
+                response_message = '操作失败！'
+                return render(request, 'control/manage/article_create.html', locals())
+
+            insert_query = '''
+            UPDATE blog_content
+            SET title = "%s",
+            slug = "%s",
+            summary = "%s",
+            text = "%s",
+            edit_time = NOW()
+            WHERE id = %s;
+            ''' % (request.POST['title'], request.POST['slug'],
+                   request.POST['summary'], request.POST['text'], article_info.id)
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+            except IntegrityError:
+                response_message = '标识符已被占用！'
+                cursor = connection.cursor()
+                cursor.execute('ROLLBACK;')
+                return render(request, 'control/manage/article_create.html', locals())
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                cursor.execute('ROLLBACK;')
+                return render(request, 'control/manage/article_create.html', locals())
+
+            meta_list = Relationship.objects.filter(content_id=article_info)
+            try:
+                for meta in meta_list:
+                    meta.delete()
+            except (KeyError, Relationship.DoesNotExist):
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                cursor.execute('ROLLBACK;')
+                return render(request, 'control/manage/article_create.html', locals())
+
+            category_id_list = request.POST.getlist('category')
+            tag_id_list = request.POST.getlist('tag')
+            meta_id_list = category_id_list + tag_id_list
+
+            if meta_id_list:
+                meta_id_set = ''
+                flag = 0
+                for meta_id in meta_id_list:
+                    if flag > 0:
+                        meta_id_set += ', '
+                    meta_id_set += ('(NULL, ' + str(article_id) + ', ' + str(meta_id) + ')')
+                    flag += 1
+                meta_insert_query = '''
+                INSERT INTO blog_relationship
+                VALUES %s;
+                ''' % meta_id_set
+                try:
+                    cursor = connection.cursor()
+                    cursor.execute(meta_insert_query)
+                except ProgrammingError:
+                    response_message = '操作失败！'
+                    cursor = connection.cursor()
+                    cursor.execute('ROLLBACK;')
+                    return render(request, 'control/manage/article_create.html', locals())
+
+            try:
+                cursor = connection.cursor()
+                cursor.execute('COMMIT;')
+                return HttpResponseRedirect(reverse('control:article_list', args=()))
+            except ProgrammingError:
+                response_message = '操作失败！'
+                return render(request, 'control/manage/article_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/article_create.html', locals())
+
+    article_info_dict = {
+        'title': article_info.title,
+        'slug': article_info.slug,
+        'text': article_info.text,
+        'summary': article_info.summary,
+        'category': [],
+        'tag': [],
+    }
+
+    category_list_query = '''
+        SELECT meta_id_id, id
+        FROM blog_relationship
+        WHERE content_id_id = %s
+        AND meta_id_id in (
+            SELECT id
+            FROM blog_meta
+            WHERE type = "category"
+        );
+    ''' % article_info.id
+    category_list = Relationship.objects.raw(category_list_query)
+    for category in category_list:
+        article_info_dict['category'].append(category.meta_id.id)
+
+    tag_list_query = '''
+        SELECT meta_id_id, id
+        FROM blog_relationship
+        WHERE content_id_id = %s
+        AND meta_id_id in (
+            SELECT id
+            FROM blog_meta
+            WHERE type = "tag"
+        );
+    ''' % article_info.id
+    tag_list = Relationship.objects.raw(tag_list_query)
+    for tag in tag_list:
+        article_info_dict['tag'].append(tag.meta_id.id)
+
+    form_info = ArticleCreateForm(article_info_dict)
+    return render(request, 'control/manage/article_create.html', locals())
+
+
+def page_create(request):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = PageCreateForm(request.POST)
+        if form_info.is_valid():
+            insert_query = '''
+            INSERT INTO blog_content
+            VALUES (NULL, "%s", "%s", NOW(), NOW(), "%s", "%s", %s, "page", %s);
+            ''' % (request.POST['title'], request.POST['slug'], request.POST['summary'],
+                   request.POST['text'], request.POST['priority_id'], request.session['user_id'])
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+                return HttpResponseRedirect(reverse('control:page_list', args=()))
+            except IntegrityError:
+                response_message = '标识符已被占用！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/page_create.html', locals())
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/page_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/page_create.html', locals())
+
+    form_info = PageCreateForm()
+    return render(request, 'control/manage/page_create.html', locals())
+
+
+def page_edit(request, page_id):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    page_info = None
+
+    try:
+        page_info = Content.objects.get(id=page_id, type='page')
+    except (KeyError, Content.DoesNotExist):
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    if request.session['user_group'] == 'writer' and page_info.author_id.id != request.session['user_id']:
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = PageCreateForm(request.POST)
+        if form_info.is_valid():
+            insert_query = '''
+            UPDATE blog_content
+            SET title = "%s",
+            slug = "%s",
+            summary = "%s",
+            text = "%s",
+            edit_time = NOW(),
+            priority_id = %s
+            WHERE id = %s;
+            ''' % (request.POST['title'], request.POST['slug'], request.POST['summary'],
+                   request.POST['text'], request.POST['priority_id'], page_info.id)
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+                return HttpResponseRedirect(reverse('control:page_list', args=()))
+            except IntegrityError:
+                response_message = '标识符已被占用！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/page_create.html', locals())
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/page_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/page_create.html', locals())
+
+    page_info_dict = {
+        'title': page_info.title,
+        'slug': page_info.slug,
+        'text': page_info.text,
+        'summary': page_info.summary,
+        'priority_id': page_info.priority_id,
+    }
+
+    form_info = PageCreateForm(page_info_dict)
+    return render(request, 'control/manage/page_create.html', locals())

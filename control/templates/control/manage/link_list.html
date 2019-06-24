@@ -1,0 +1,84 @@
+{% extends 'control/base.html' %}
+{% load control_extras %}
+{% block container %}
+{% get_view_name request.path 3 as view_name %}
+                    <div class="alert alert-primary" role="alert">
+                        <i class="fas fa-link"></i> 链接管理
+                    </div>
+
+                    {% if response_message %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> {{ response_message }}！
+                    </div>
+                    {% endif %}
+
+                    <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
+                        <form method="GET" action="{% url 'control:link_list' %}" class="input-group input-group-lg mr-2">
+                            {{ form_info.keyword }}
+                            <div class="btn-group btn-group-lg mr-2" role="group" aria-label="Basic example">
+                                <button type="submit" class="btn btn-secondary">筛选</button>
+                            </div>
+                        </form>
+                        <div class="btn-group btn-group-lg mr-2" role="group" aria-label="Basic example">
+                            <a href="{% url 'control:link_create' %}" class="btn btn-primary">新建链接</a>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{% url 'control:link_list' %}">
+                        {% csrf_token %}
+                        <div class="btn-group btn-group-lg" role="group" aria-label="Button group with nested dropdown">
+                            <div class="btn-group btn-group-lg" role="group">
+                                <button id="btnGroupDrop1" type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    选中项
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-lg" aria-labelledby="btnGroupDrop1">
+                                    <button type="submit" class="dropdown-item dropdown-item-lg">删除</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <table class="table table-striped table-hover cp-content-list">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th scope="col"><input type="checkbox" id="article_cid"></th>
+                                    <th scope="col">名称</th>
+                                    <th scope="col">URL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for link in link_list %}
+                                <tr>
+                                    <td><input type="checkbox" value="{{ link.0 }}" name="article_cid[]"></td>
+                                    <td>{{ link.1 }} <a class="badge badge-dark" href="{% url 'control:link_edit' link.0 %}" target="_blank"><i class="fas fa-pen-nib"></i> 编辑</a></td>
+                                    <td>{{ link.2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </form>
+                    <nav>
+                        <ul class="pagination">
+                            {% if page_id > 1 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:link_list' page_id|add:-1 %}"><i class="fas fa-arrow-left"></i> 上一页</a></li>
+                            {% endif %}
+                            {% if page_id > 2 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:link_list' page_id|add:-2 %}">{{ page_id|add:-2 }}</a></li>
+                            {% endif %}
+                            {% if page_id > 1 %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:link_list' page_id|add:-1 %}">{{ page_id|add:-1 }}</a></li>
+                            {% endif %}
+
+                             <li class="page-item active"><a class="page-link" href="#">{{ page_id }}</a></li>
+
+                            {% if page_id < basic_info.number_of_link_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:link_list' page_id|add:1 %}">{{ page_id|add:1 }}</a></li>
+                            {% endif %}
+                            {% if page_id|add:1 < basic_info.number_of_link_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:link_list' page_id|add:2 %}">{{ page_id|add:2 }}</a></li>
+                            {% endif %}
+                            {% if page_id < basic_info.number_of_link_page %}
+                            <li class="page-item"><a class="page-link" href="{% url 'control:link_list' page_id|add:1 %}"><i class="fas fa-arrow-right"></i> 下一页</a></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+{% endblock %}

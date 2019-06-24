@@ -1,0 +1,68 @@
+{% extends 'control/base.html' %}
+{% block container %}
+{% load control_extras %}
+{% get_view_name request.path 2 as action_name %}
+{% get_view_name request.path 3 as view_name %}
+                    <div class="alert alert-primary" role="alert">
+                        {% if action_name == 'create' %}
+                        <i class="fas fa-user-friends"></i> 创建用户
+                        {% else %}
+                        <i class="fas fa-user-friends"></i> 编辑用户
+                        {% endif %}
+                    </div>
+
+                    {% if response_message %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> {{ response_message }}！
+                    </div>
+                    {% endif %}
+
+                    {% if action_name == 'create' %}
+                    <form action="{% url 'control:user_create' %}" method="POST">
+                    {% else %}
+                    <form action="{% url 'control:user_edit' user_info.id %}" method="POST">
+                    {% endif %}
+                        {% csrf_token %}
+                        <div class="form-group row">
+                            <label for="username" class="col-sm-2 col-form-label">用户名</label>
+                            <div class="col-sm-10">
+                                {{ form_info.username }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="password" class="col-sm-2 col-form-label">密码</label>
+                            <div class="col-sm-10">
+                                {{ form_info.password }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="mail" class="col-sm-2 col-form-label">Email</label>
+                            <div class="col-sm-10">
+                                {{ form_info.mail }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="url" class="col-sm-2 col-form-label">主页</label>
+                            <div class="col-sm-10">
+                                {{ form_info.url }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="nickname" class="col-sm-2 col-form-label">昵称</label>
+                            <div class="col-sm-10">
+                                {{ form_info.nickname }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="group" class="col-sm-2 col-form-label">用户组</label>
+                            <div class="col-sm-10">
+                                {{ form_info.group }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-sm-10">
+                                <button type="submit" class="btn btn-primary">提交</button>
+                            </div>
+                        </div>
+                    </form>
+{% endblock %}

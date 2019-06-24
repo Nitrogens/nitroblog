@@ -18,7 +18,7 @@ def find_parent(tree, comment):
 
 
 def create_comment_tree(content_id):
-    comment_list = Comment.objects.filter(content_id=content_id).order_by('create_time')
+    comment_list = Comment.objects.filter(content_id=content_id, status='approved').order_by('create_time')
     comment_tree = {}
 
     for comment in comment_list:
@@ -35,17 +35,18 @@ def dfs(tree):
 
     for key, value in tree.items():
         user_info = key.author_id
-        user_name = user_info.username
+        user_name = user_info.nickname
 
         html_code += '''<div class="page-article-comment card" style="margin-left: 20px; margin-right: 10px;">
                         <div class="card-header">
                             <span class="badge badge-primary"><i class="fas fa-user"></i> %s</span>
                             <span class="badge badge-warning"><i class="fas fa-calendar-day"></i> %s</span>
+                            <a class="badge badge-success comment-reply" href="#" id="%s" data-toggle="modal" data-target="#commentModal"><i class="fas fa-reply"></i> 回复</a>
                         </div>
                         <div class="card-body">
                             <p class="card-text">%s</p>
                         </div>
-                ''' % (user_name, key.create_time.astimezone(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%I:%S'), key.text)
+                ''' % (user_name, key.create_time, key.id, key.text)
 
         if value:
             html_code += dfs(tree[key])
@@ -62,17 +63,18 @@ def get_comments(content_id):
 
     for key, value in comment_tree.items():
         user_info = key.author_id
-        user_name = user_info.username
+        user_name = user_info.nickname
 
         html_code += '''<div class="page-article-comment card">
                                 <div class="card-header">
                                     <span class="badge badge-primary"><i class="fas fa-user"></i> %s</span>
                                     <span class="badge badge-warning"><i class="fas fa-calendar-day"></i> %s</span>
+                                    <a class="badge badge-success comment-reply" href="#" id="%s" data-toggle="modal" data-target="#commentModal"><i class="fas fa-reply"></i> 回复</a>
                                 </div>
                                 <div class="card-body">
                                     <p class="card-text">%s</p>
                                 </div>
-                        ''' % (user_name, key.create_time.astimezone(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%I:%S'), key.text)
+                        ''' % (user_name, key.create_time, key.id, key.text)
 
         if value:
             html_code += dfs(comment_tree[key])

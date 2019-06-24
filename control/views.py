@@ -7,27 +7,15 @@ from django.db import connection, ProgrammingError, IntegrityError
 import hashlib, base64, datetime
 
 
+from blog.common import *
 from blog.models import *
-from blog.views import get_basic_info, ceil, get_content_category_list
+from blog.views import get_basic_info, get_content_category_list
 from .forms import *
 
 
-def password_encrypt(password, salt='segmentation_fault'):
-    hash_class = hashlib.sha256()
-    password += salt
-    hash_class.update(password.encode())
-    return hash_class.hexdigest()
-
-
-def login(request, source_url=None):
-    if source_url is not None:
-        source_url = base64.b64decode(source_url)
-
+def login(request):
     if request.session.get('is_login', None):
-        if source_url is None:
-            return HttpResponseRedirect(reverse('control:dashboard', args=()))
-        else:
-            return HttpResponseRedirect(source_url)
+        return HttpResponseRedirect(reverse('control:dashboard', args=()))
 
     login_message = None
 
@@ -45,10 +33,7 @@ def login(request, source_url=None):
                     request.session['user_id'] = user.id
                     user.last_login_time = datetime.datetime.now()
                     user.save()
-                    if source_url is None:
-                        return HttpResponseRedirect(reverse('control:dashboard', args=()))
-                    else:
-                        return HttpResponseRedirect(source_url)
+                    return HttpResponseRedirect(reverse('control:dashboard', args=()))
                 else:
                     login_message = '用户名或密码错误！'
             except User.DoesNotExist:
@@ -60,22 +45,13 @@ def login(request, source_url=None):
     return render(request, 'control/login.html', locals())
 
 
-def logout(request, destination_url=None):
-    if destination_url is not None:
-        destination_url = base64.b64decode(destination_url)
-
+def logout(request):
     if not request.session.get('is_login', None):
-        if destination_url is None:
-            return HttpResponseRedirect(reverse('control:login', args=()))
-        else:
-            return HttpResponseRedirect(destination_url)
+        return HttpResponseRedirect(reverse('control:login', args=()))
 
     request.session.flush()
 
-    if destination_url is None:
-        return HttpResponseRedirect(reverse('control:login', args=()))
-    else:
-        return HttpResponseRedirect(destination_url)
+    return HttpResponseRedirect(reverse('control:login', args=()))
 
 
 def forbidden(request):
@@ -99,7 +75,7 @@ def dashboard(request):
     recent_article_list_query = '''
     SELECT title, slug, id
     FROM blog_content
-    WHERE type = "article"
+    WHERE type = 'article'
     ORDER BY create_time DESC
     LIMIT 0, 10;
     '''
@@ -138,10 +114,10 @@ def personal_information(request):
         if form_info.is_valid():
             operation_query = '''
             UPDATE blog_user
-            SET mail = "%s",
-            url = "%s",
-            nickname = "%s"
-            WHERE username = "%s";
+            SET mail = '%s',
+            url = '%s',
+            nickname = '%s'
+            WHERE username = '%s';
             ''' % (form_info.cleaned_data['email'], form_info.cleaned_data['url'], form_info.cleaned_data['nickname'], request.session['username'])
             try:
                 cursor = connection.cursor()
@@ -232,11 +208,14 @@ def article_list(request, page_id=1):
         category_id = int(category_id)
 
     page_size = 10
-    basic_info = get_basic_info()
-    basic_info['number_of_article'] = Content.objects.filter(type='article').count()
+    basic_info = get_basic_info(request)
+    basic_info['number_of_article'] = 0
+    if request.session['user_group'] == 'administrator':
+        basic_info['number_of_article'] = Content.objects.filter(type='article').count()
+    else:
+        basic_info['number_of_article'] = Content.objects.filter(type='article',
+                                                                 author_id=User.objects.get(id=request.session['user_id'])).count()
     basic_info['number_of_article_page'] = ceil(basic_info['number_of_article'], page_size)
-    if page_id <= 0 or page_id > basic_info['number_of_article_page']:
-        raise Http404('Could not found this page!')
 
     left_range = 0 + page_size * (page_id - 1)
 
@@ -245,7 +224,7 @@ def article_list(request, page_id=1):
     COUNT(blog_comment.content_id_id), blog_content.slug, blog_content.author_id_id
     FROM blog_content LEFT OUTER JOIN blog_comment
     ON (blog_content.id = blog_comment.content_id_id)
-    WHERE blog_content.type = "article" 
+    WHERE blog_content.type = 'article' 
     '''
 
     if request.session['user_group'] != 'administrator':
@@ -255,7 +234,7 @@ def article_list(request, page_id=1):
 
     if keyword != '':
         article_list_query += '''
-        AND blog_content.title LIKE "%%%%%s%%%%"
+        AND blog_content.title LIKE '%%%%%s%%%%'
         ''' % keyword
 
     if category_id != 0:
@@ -326,11 +305,14 @@ def page_list(request, page_id=1):
         keyword = ''
 
     page_size = 10
-    basic_info = get_basic_info()
-    basic_info['number_of_article'] = Content.objects.filter(type='page').count()
+    basic_info = get_basic_info(request)
+    if request.session['user_group'] == 'administrator':
+        basic_info['number_of_article'] = Content.objects.filter(type='page').count()
+    else:
+        basic_info['number_of_article'] = Content.objects.filter(type='page',
+                                                                 author_id=User.objects.get(
+                                                                     id=request.session['user_id'])).count()
     basic_info['number_of_article_page'] = ceil(basic_info['number_of_article'], page_size)
-    if page_id <= 0 or page_id > basic_info['number_of_article_page']:
-        raise Http404('Could not found this page!')
 
     left_range = 0 + page_size * (page_id - 1)
 
@@ -339,7 +321,7 @@ def page_list(request, page_id=1):
     COUNT(blog_comment.content_id_id), blog_content.slug, blog_content.author_id_id
     FROM blog_content LEFT OUTER JOIN blog_comment
     ON (blog_content.id = blog_comment.content_id_id)
-    WHERE blog_content.type = "page" 
+    WHERE blog_content.type = 'page' 
     '''
 
     if request.session['user_group'] != 'administrator':
@@ -349,7 +331,7 @@ def page_list(request, page_id=1):
 
     if keyword != '':
         article_list_query += '''
-        AND blog_content.title LIKE "%%%%%s%%%%"
+        AND blog_content.title LIKE '%%%%%s%%%%'
         ''' % keyword
 
     article_list_query += '''
@@ -388,9 +370,10 @@ def article_create(request):
 
             insert_query = '''
             INSERT INTO blog_content
-            VALUES (NULL, "%s", "%s", NOW(), NOW(), "%s", "%s", 0, "article", %s);
+            VALUES (NULL, '%s', '%s', NOW(), NOW(), '%s', '%s', 0, 'article', %s);
             ''' % (request.POST['title'], request.POST['slug'],
-                   request.POST['summary'], request.POST['text'], request.session['user_id'])
+                   content_operation(request.POST['summary']), content_operation(request.POST['text']), request.session['user_id'])
+
             try:
                 cursor = connection.cursor()
                 cursor.execute(insert_query)
@@ -402,7 +385,6 @@ def article_create(request):
             except ProgrammingError:
                 response_message = '操作失败！'
                 cursor = connection.cursor()
-                cursor.execute('ROLLBACK;')
                 return render(request, 'control/manage/article_create.html', locals())
 
             article_id = Content.objects.get(slug=request.POST['slug']).id
@@ -479,15 +461,15 @@ def article_edit(request, article_id):
 
             insert_query = '''
             UPDATE blog_content
-            SET title = "%s",
-            slug = "%s",
-            summary = "%s",
-            text = "%s",
+            SET title = '%s',
+            slug = '%s',
+            summary = '%s',
+            text = '%s',
             edit_time = NOW()
             WHERE id = %s
-            AND type = "article";
+            AND type = 'article';
             ''' % (request.POST['title'], request.POST['slug'],
-                   request.POST['summary'], request.POST['text'], article_info.id)
+                   content_operation(request.POST['summary']), content_operation(request.POST['text']), article_info.id)
             try:
                 cursor = connection.cursor()
                 cursor.execute(insert_query)
@@ -565,7 +547,7 @@ def article_edit(request, article_id):
         AND meta_id_id in (
             SELECT id
             FROM blog_meta
-            WHERE type = "category"
+            WHERE type = 'category'
         );
     ''' % article_info.id
     category_list = Relationship.objects.raw(category_list_query)
@@ -579,7 +561,7 @@ def article_edit(request, article_id):
         AND meta_id_id in (
             SELECT id
             FROM blog_meta
-            WHERE type = "tag"
+            WHERE type = 'tag'
         );
     ''' % article_info.id
     tag_list = Relationship.objects.raw(tag_list_query)
@@ -604,9 +586,9 @@ def page_create(request):
         if form_info.is_valid():
             insert_query = '''
             INSERT INTO blog_content
-            VALUES (NULL, "%s", "%s", NOW(), NOW(), "%s", "%s", %s, "page", %s);
-            ''' % (request.POST['title'], request.POST['slug'], request.POST['summary'],
-                   request.POST['text'], request.POST['priority_id'], request.session['user_id'])
+            VALUES (NULL, '%s', '%s', NOW(), NOW(), '%s', '%s', %s, 'page', %s);
+            ''' % (request.POST['title'], request.POST['slug'], request.POST['summary'].replace('\\', '\\\\'),
+                   request.POST['text'].replace('\\', '\\\\'), request.POST['priority_id'], request.session['user_id'])
             try:
                 cursor = connection.cursor()
                 cursor.execute(insert_query)
@@ -652,16 +634,16 @@ def page_edit(request, page_id):
         if form_info.is_valid():
             insert_query = '''
             UPDATE blog_content
-            SET title = "%s",
-            slug = "%s",
-            summary = "%s",
-            text = "%s",
+            SET title = '%s',
+            slug = '%s',
+            summary = '%s',
+            text = '%s',
             edit_time = NOW(),
             priority_id = %s
             WHERE id = %s
-            AND type = "page";
-            ''' % (request.POST['title'], request.POST['slug'], request.POST['summary'],
-                   request.POST['text'], request.POST['priority_id'], page_info.id)
+            AND type = 'page';
+            ''' % (request.POST['title'], request.POST['slug'], request.POST['summary'].replace('\\', '\\\\'),
+                   request.POST['text'].replace('\\', '\\\\'), request.POST['priority_id'], page_info.id)
             try:
                 cursor = connection.cursor()
                 cursor.execute(insert_query)
@@ -726,27 +708,25 @@ def category_list(request, page_id=1):
         keyword = ''
 
     page_size = 10
-    basic_info = get_basic_info()
+    basic_info = get_basic_info(request)
     basic_info['number_of_category'] = Meta.objects.filter(type='category').count()
     basic_info['number_of_category_page'] = ceil(basic_info['number_of_category'], page_size)
-    if page_id <= 0 or page_id > basic_info['number_of_category_page']:
-        raise Http404('Could not found this page!')
 
     left_range = 0 + page_size * (page_id - 1)
 
     meta_list_query = '''
     SELECT id, name, slug
     FROM blog_meta
-    WHERE type = "category"
-    ORDER BY priority_id
+    WHERE type = 'category'
     '''
 
     if keyword != '':
         meta_list_query += '''
-        AND name LIKE "%%%%%s%%%%"
+        AND name LIKE '%%%%%s%%%%'
         ''' % keyword
 
     meta_list_query += '''
+    ORDER BY priority_id
     LIMIT %s, %s;
     ''' % (left_range, page_size)
 
@@ -773,7 +753,7 @@ def category_create(request):
         if form_info.is_valid():
             insert_query = '''
             INSERT INTO blog_meta
-            VALUES (NULL, "%s", "%s", "category", "%s", %s);
+            VALUES (NULL, '%s', '%s', 'category', '%s', %s);
             ''' % (request.POST['name'], request.POST['slug'],
                    request.POST['description'], request.POST['priority_id'])
             try:
@@ -818,15 +798,14 @@ def category_edit(request, category_id):
         if form_info.is_valid():
             insert_query = '''
             UPDATE blog_meta
-            SET name = "%s",
-            slug = "%s",
-            description = "%s",
+            SET name = '%s',
+            slug = '%s',
+            description = '%s',
             priority_id = %s
             WHERE id = %s
-            AND type = "category";
+            AND type = 'category';
             ''' % (request.POST['name'], request.POST['slug'], request.POST['description'],
                    request.POST['priority_id'], category_info.id)
-            print(insert_query)
             try:
                 cursor = connection.cursor()
                 cursor.execute(insert_query)
@@ -890,27 +869,25 @@ def tag_list(request, page_id=1):
         keyword = ''
 
     page_size = 10
-    basic_info = get_basic_info()
+    basic_info = get_basic_info(request)
     basic_info['number_of_tag'] = Meta.objects.filter(type='tag').count()
     basic_info['number_of_tag_page'] = ceil(basic_info['number_of_tag'], page_size)
-    if page_id <= 0 or page_id > basic_info['number_of_tag_page']:
-        raise Http404('Could not found this page!')
 
     left_range = 0 + page_size * (page_id - 1)
 
     meta_list_query = '''
     SELECT id, name, slug
     FROM blog_meta
-    WHERE type = "tag"
-    ORDER BY priority_id
+    WHERE type = 'tag'
     '''
 
     if keyword != '':
         meta_list_query += '''
-        AND name LIKE "%%%%%s%%%%"
+        AND name LIKE '%%%%%s%%%%'
         ''' % keyword
 
     meta_list_query += '''
+    ORDER BY priority_id
     LIMIT %s, %s;
     ''' % (left_range, page_size)
 
@@ -937,7 +914,7 @@ def tag_create(request):
         if form_info.is_valid():
             insert_query = '''
             INSERT INTO blog_meta
-            VALUES (NULL, "%s", "%s", "tag", "%s", %s);
+            VALUES (NULL, '%s', '%s', 'tag', '%s', %s);
             ''' % (request.POST['name'], request.POST['slug'],
                    request.POST['description'], request.POST['priority_id'])
             try:
@@ -982,15 +959,14 @@ def tag_edit(request, tag_id):
         if form_info.is_valid():
             insert_query = '''
             UPDATE blog_meta
-            SET name = "%s",
-            slug = "%s",
-            description = "%s",
+            SET name = '%s',
+            slug = '%s',
+            description = '%s',
             priority_id = %s
             WHERE id = %s
-            AND type = "tag";
+            AND type = 'tag';
             ''' % (request.POST['name'], request.POST['slug'], request.POST['description'],
                    request.POST['priority_id'], tag_info.id)
-            print(insert_query)
             try:
                 cursor = connection.cursor()
                 cursor.execute(insert_query)
@@ -1017,3 +993,544 @@ def tag_edit(request, tag_id):
 
     form_info = MetaCreateForm(tag_info_dict)
     return render(request, 'control/manage/meta_create.html', locals())
+
+
+def user_list(request, page_id=1):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    if request.method == 'POST':
+        user_id_list = request.POST.getlist('article_cid[]')
+        user_id_set = ''
+        if user_id_list:
+            flag = 0
+            for user_id in user_id_list:
+                if int(user_id) == int(request.session['user_id']):
+                    continue
+                if flag > 0:
+                    user_id_set += ', '
+                user_id_set += user_id
+                flag += 1
+            if flag > 0:
+                operation_query = '''
+                SELECT * FROM blog_user
+                WHERE id in (%s);
+                ''' % user_id_set
+                try:
+                    user_list = User.objects.raw(operation_query)
+                    for user in user_list:
+                        user.delete()
+                except (KeyError, Content.DoesNotExist):
+                    response_message = '删除失败！'
+
+    keyword = request.GET.get('keyword')
+
+    if keyword is None:
+        keyword = ''
+
+    page_size = 10
+    basic_info = get_basic_info(request)
+    basic_info['number_of_user'] = User.objects.all().count()
+    basic_info['number_of_user_page'] = ceil(basic_info['number_of_user'], page_size)
+
+    left_range = 0 + page_size * (page_id - 1)
+
+    user_list_query = '''
+    SELECT id, username, nickname, last_login_time
+    FROM blog_user
+    '''
+
+    if keyword != '':
+        user_list_query += '''
+        WHERE username LIKE '%%%%%s%%%%'
+        ''' % keyword
+
+    user_list_query += '''
+    ORDER BY create_time DESC
+    LIMIT %s, %s;
+    ''' % (left_range, page_size)
+
+    cursor = connection.cursor()
+    cursor.execute(user_list_query)
+    user_list = cursor.fetchall()
+
+    form_info = UserFilterForm({'keyword': keyword,})
+    return render(request, 'control/manage/user_list.html', locals())
+
+
+def user_create(request):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = UserCreateForm(request.POST)
+        if form_info.is_valid():
+            password = password_encrypt(request.POST['password'])
+            group_slug = ''
+            if int(request.POST['group']) == 0:
+                group_slug = 'administrator'
+            elif int(request.POST['group']) == 1:
+                group_slug = 'writer'
+            else:
+                group_slug = 'user'
+            insert_query = '''
+            INSERT INTO blog_user
+            VALUES (NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW(), '%s');
+            ''' % (request.POST['username'], password, request.POST['mail'],
+                   request.POST['url'], request.POST['nickname'], group_slug)
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+                return HttpResponseRedirect(reverse('control:user_list', args=()))
+            except IntegrityError:
+                response_message = '用户名/邮箱/昵称已被占用！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/user_create.html', locals())
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/user_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/user_create.html', locals())
+
+    form_info = UserCreateForm()
+    return render(request, 'control/manage/user_create.html', locals())
+
+
+def user_edit(request, user_id):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    user_info = None
+
+    try:
+        user_info = User.objects.get(id=user_id)
+    except (KeyError, Content.DoesNotExist):
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = UserEditForm(request.POST)
+        if form_info.is_valid():
+            password = password_encrypt(request.POST['password'])
+            group_slug = ''
+            if int(request.POST['group']) == 0:
+                group_slug = 'administrator'
+            elif int(request.POST['group']) == 1:
+                group_slug = 'writer'
+            else:
+                group_slug = 'user'
+
+            insert_query = '''
+            UPDATE blog_user
+            SET username = '%s',
+            ''' % request.POST['username']
+
+            if request.POST['password'] != '':
+                insert_query += '''
+                password = '%s',
+                ''' % password
+
+            insert_query += '''
+            mail = '%s',
+            url = '%s',
+            nickname = '%s',
+            `group` = '%s'
+            WHERE id = %s;
+            ''' % (request.POST['mail'], request.POST['url'],
+                   request.POST['nickname'], group_slug, user_info.id)
+            print(insert_query)
+
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+                return HttpResponseRedirect(reverse('control:user_list', args=()))
+            except IntegrityError:
+                response_message = '用户名/邮箱/昵称已被占用！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/user_create.html', locals())
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/user_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/user_create.html', locals())
+
+    group_id = None;
+    if user_info.group == 'administrator':
+        group_id = 0
+    elif user_info.group == 'writer':
+        group_id = 1
+    else:
+        group_id = 2
+
+    user_info_dict = {
+        'username': user_info.username,
+        'mail': user_info.mail,
+        'url': user_info.url,
+        'nickname': user_info.nickname,
+        'group': group_id,
+    }
+
+    form_info = UserEditForm(user_info_dict)
+    return render(request, 'control/manage/user_create.html', locals())
+
+
+def comment_list(request, page_id=1):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    if request.method == 'POST':
+        print(request.POST)
+        if request.POST['operation'] == 'comment_submit':
+            if request.META.get('HTTP_X_FORWARDED_FOR') is not None:
+                ip = request.META['HTTP_X_FORWARDED_FOR']
+            else:
+                ip = request.META['REMOTE_ADDR']
+
+            try:
+                comment_info = Comment.objects.get(id=int(request.POST['id']))
+            except (KeyError, Content.DoesNotExist):
+                return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+            comment_commit_query = '''
+            INSERT INTO blog_comment
+            VALUES (NULL, '%s', '%s', '%s', 'approved', '%s', %s, %s, %s);
+            ''' % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                   ip, request.POST['text'], request.session['user_id'], comment_info.content_id.id, request.POST['id'])
+
+            try:
+                cursor = connection.cursor()
+                cursor.execute(comment_commit_query)
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+
+        else:
+            comment_id_list = request.POST.getlist('article_cid[]')
+            comment_id_set = ''
+            flag = 0
+            for comment_id in comment_id_list:
+                if flag > 0:
+                    comment_id_set += ', '
+                comment_id_set += comment_id
+                flag += 1
+
+            operation_query = '''
+                    SELECT * FROM blog_comment
+                    WHERE id in (%s)
+                    ''' % comment_id_set
+
+            if request.session['user_group'] == 'writer':
+                operation_query += '''
+                        AND content_id_id in (
+                            SELECT id
+                            FROM blog_content
+                            WHERE author_id_id = %s
+                        )
+                        ''' % request.session['user_id']
+
+            if flag > 0 and request.POST['operation'] == 'delete':
+                try:
+                    comment_list = Comment.objects.raw(operation_query)
+                    for comment in comment_list:
+                        comment.delete()
+                except (KeyError, Content.DoesNotExist):
+                    response_message = '删除失败！'
+
+            elif flag > 0:
+                try:
+                    comment_list = Comment.objects.raw(operation_query)
+                    for comment in comment_list:
+                        if request.POST['operation'] == 'pass':
+                            comment.status = 'approved'
+                        else:
+                            comment.status = 'rejected'
+                        comment.save()
+                except (KeyError, Content.DoesNotExist):
+                    response_message = '操作失败！'
+
+    keyword = request.GET.get('keyword')
+
+    if keyword is None:
+        keyword = ''
+
+    number_of_comment_query = '''
+    SELECT COUNT(id) FROM blog_comment
+    '''
+    if request.session['user_group'] == 'writer':
+        operation_query += '''
+        WHERE content_id_id in (
+            SELECT id
+            FROM blog_content
+            WHERE author_id_id = %s
+        )
+        ''' % request.session['user_id']
+
+    page_size = 10
+    basic_info = get_basic_info(request)
+    basic_info['number_of_comment'] = connection.cursor().execute(number_of_comment_query)
+    basic_info['number_of_comment_page'] = ceil(basic_info['number_of_comment'], page_size)
+
+    left_range = 0 + page_size * (page_id - 1)
+
+    comment_list_query = '''
+    SELECT id, author_id_id, content_id_id, text, status, status, create_time
+    FROM blog_comment
+    '''
+
+    if request.session['user_group'] == 'writer':
+        operation_query += '''
+        WHERE content_id_id in (
+            SELECT id
+            FROM blog_content
+            WHERE author_id_id = %s
+        )
+        ''' % request.session['user_id']
+
+    if keyword != '':
+        comment_list_query += '''
+        WHERE text LIKE '%%%%%s%%%%'
+        ''' % keyword
+
+    comment_list_query += '''
+    ORDER BY create_time DESC
+    LIMIT %s, %s;
+    ''' % (left_range, page_size)
+
+    cursor = connection.cursor()
+    cursor.execute(comment_list_query)
+    comment_list = list(cursor.fetchall())
+
+    for i in range(0, len(comment_list)):
+        comment_list[i] = list(comment_list[i])
+        comment_list[i][1] = User.objects.get(id=comment_list[i][1]).nickname
+        content_info = Content.objects.get(id=comment_list[i][2])
+        comment_list[i][2] = content_info.title
+        comment_list[i][5] = content_info.slug
+
+    form_info = CommentFilterForm({'keyword': keyword,})
+    comment_commit_form_info = CommentCreateForm()
+
+    return render(request, 'control/manage/comment_list.html', locals())
+
+
+def link_list(request, page_id=1):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    if request.method == 'POST':
+        link_id_list = request.POST.getlist('article_cid[]')
+        link_id_set = ''
+        if link_id_list:
+            flag = 0
+            for link_id in link_id_list:
+                if flag > 0:
+                    link_id_set += ', '
+                link_id_set += link_id
+                flag += 1
+            operation_query = '''
+            SELECT * FROM blog_link
+            WHERE id in (%s);
+            ''' % link_id_set
+
+            try:
+                link_list = Link.objects.raw(operation_query)
+                for link in link_list:
+                    link.delete()
+            except (KeyError, Content.DoesNotExist):
+                response_message = '删除失败！'
+
+    keyword = request.GET.get('keyword')
+
+    if keyword is None:
+        keyword = ''
+
+    page_size = 10
+    basic_info = get_basic_info(request)
+    basic_info['number_of_link'] = Link.objects.filter().count()
+    basic_info['number_of_link_page'] = ceil(basic_info['number_of_link'], page_size)
+
+    left_range = 0 + page_size * (page_id - 1)
+
+    link_list_query = '''
+    SELECT id, name, url
+    FROM blog_link
+    '''
+
+    if keyword != '':
+        link_list_query += '''
+        WHERE name LIKE '%%%s%%'
+        ''' % keyword
+
+    link_list_query += '''
+    LIMIT %s, %s;
+    ''' % (left_range, page_size)
+
+    cursor = connection.cursor()
+    cursor.execute(link_list_query)
+    link_list = cursor.fetchall()
+
+    form_info = LinkFilterForm({'keyword': keyword,})
+
+    return render(request, 'control/manage/link_list.html', locals())
+
+
+def link_create(request):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = LinkCreateForm(request.POST)
+        if form_info.is_valid():
+            insert_query = '''
+            INSERT INTO blog_link
+            VALUES (NULL, '%s', '%s');
+            ''' % (request.POST['name'], request.POST['url'])
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+                return HttpResponseRedirect(reverse('control:link_list', args=()))
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/link_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/link_create.html', locals())
+
+    form_info = LinkCreateForm()
+    return render(request, 'control/manage/link_create.html', locals())
+
+
+def link_edit(request, link_id):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    link_info = None
+
+    try:
+        link_info = Link.objects.get(id=link_id)
+    except (KeyError, Content.DoesNotExist):
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+
+    if request.method == 'POST':
+        form_info = LinkCreateForm(request.POST)
+        if form_info.is_valid():
+            insert_query = '''
+            UPDATE blog_link
+            SET name = '%s',
+            url = '%s'
+            WHERE id = %s;
+            ''' % (request.POST['name'], request.POST['url'], link_id)
+            try:
+                cursor = connection.cursor()
+                cursor.execute(insert_query)
+                return HttpResponseRedirect(reverse('control:link_list', args=()))
+            except ProgrammingError:
+                response_message = '操作失败！'
+                cursor = connection.cursor()
+                return render(request, 'control/manage/link_create.html', locals())
+
+        else:
+            response_message = '请检查输入格式！'
+            return render(request, 'control/manage/link_create.html', locals())
+
+    link_info_dict = {
+        'name': link_info.name,
+        'url': link_info.url,
+    }
+
+    form_info = LinkCreateForm(link_info_dict)
+    return render(request, 'control/manage/link_create.html', locals())
+
+
+def setting(request):
+    if request.session.get('is_login') is None:
+        return HttpResponseRedirect(reverse('control:login', args=()))
+
+    if request.session['user_group'] != 'administrator':
+        return HttpResponseRedirect(reverse('control:forbidden', args=()))
+
+    response_message = ''
+    setting_data_list = Setting.objects.all()
+
+    if request.method == 'POST':
+        form_info = SettingForm(request.POST)
+        if form_info.is_valid():
+            try:
+                cursor = connection.cursor()
+                cursor.execute('BEGIN;')
+            except ProgrammingError:
+                response_message = '操作失败！'
+                return render(request, 'control/general/setting.html', locals())
+
+            is_success = True
+            for setting_data in setting_data_list:
+                operation_query = '''
+                            UPDATE blog_setting
+                            SET value = '%s'
+                            WHERE name = '%s';
+                            ''' % (request.POST[setting_data.name], setting_data.name)
+
+                try:
+                    cursor = connection.cursor()
+                    cursor.execute(operation_query)
+                    response_message = '更新成功！'
+                except ProgrammingError:
+                    cursor = connection.cursor()
+                    cursor.execute('ROLLBACK;')
+                    response_message = '更新失败！'
+                    is_success = False
+                    break
+
+            if is_success:
+                try:
+                    cursor = connection.cursor()
+                    cursor.execute('COMMIT;')
+                except ProgrammingError:
+                    response_message = '操作失败！'
+                    return render(request, 'control/general/setting.html', locals())
+        else:
+            response_message = '请检查输入格式！'
+
+    form_info = SettingForm()
+    form_info['blog_name'].initial = Setting.objects.get(name='blog_name').value
+    form_info['page_size'].initial = Setting.objects.get(name='page_size').value
+    form_info['meta_page_size'].initial = Setting.objects.get(name='meta_page_size').value
+    form_info['github'].initial = Setting.objects.get(name='github').value
+    form_info['weibo'].initial = Setting.objects.get(name='weibo').value
+    return render(request, 'control/general/setting.html', locals())

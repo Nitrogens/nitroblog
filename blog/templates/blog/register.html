@@ -1,0 +1,60 @@
+{% extends 'blog/base.html' %}
+{% load blog_extras %}
+{% block container %}
+                <div class="page-category col-lg-9">
+
+                    <div class="alert alert-primary" role="alert">
+                        <i class="fas fa-user-plus"></i> 注册新用户
+                    </div>
+
+                    {% if response_message %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> {{ response_message }}！
+                    </div>
+                    {% endif %}
+
+                    <form action="{% url 'blog:register' %}" method="POST">
+                        {% csrf_token %}
+                        <div class="form-group row">
+                            <label for="username" class="col-sm-2 col-form-label">用户名</label>
+                            <div class="col-sm-10">
+                                {{ form_info.username }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="password" class="col-sm-2 col-form-label">密码</label>
+                            <div class="col-sm-10">
+                                {{ form_info.password }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="password_confirm" class="col-sm-2 col-form-label">密码确认</label>
+                            <div class="col-sm-10">
+                                {{ form_info.password_confirm }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="email" class="col-sm-2 col-form-label">Email</label>
+                            <div class="col-sm-10">
+                                {{ form_info.email }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="url" class="col-sm-2 col-form-label">个人主页</label>
+                            <div class="col-sm-10">
+                                {{ form_info.url }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="nickname" class="col-sm-2 col-form-label">昵称</label>
+                            <div class="col-sm-10">
+                                {{ form_info.nickname }}
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-sm-10">
+                                <button type="submit" class="btn btn-primary">提交</button>
+                            </div>
+                        </div>
+                    </form>
+{% endblock %}

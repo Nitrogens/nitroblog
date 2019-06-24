@@ -18,7 +18,7 @@
         <div class="card-body">
             <h1 class="card-title">{{ article.title }}</h1>
             <hr>
-            <p class="card-text">{{ article.summary }}</p>
+            <div class="card-text">{{ article.summary|safe }}</div>
             <a href="{% url 'blog:article' article.slug %}" class="page-content-button btn btn-primary">阅读全文</a>
         </div>
         <div class="card-footer">

@@ -4,7 +4,7 @@ from blog.models import Meta
 
 
 class LoginForm(forms.Form):
-    username = forms.CharField(max_length=32, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '用户名',}))
+    username = forms.SlugField(max_length=32, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '用户名',}))
     password = forms.CharField(max_length=256, widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': '密码',}))
 
 
@@ -69,3 +69,55 @@ class MetaCreateForm(forms.Form):
     slug = forms.SlugField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control',}))
     description = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control',}))
     priority_id = forms.IntegerField(widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+
+class UserFilterForm(forms.Form):
+    keyword = forms.CharField(max_length=32, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '关键字',}))
+
+
+class UserCreateForm(forms.Form):
+    username = forms.CharField(max_length=32, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    password = forms.CharField(max_length=256, widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    mail = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    url = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    nickname = forms.CharField(max_length=32, widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+    choice_list = [(0, 'Administrator'), (1, 'Writer'), (2, 'User')]
+    group = forms.ChoiceField(choices=choice_list, widget=forms.Select(attrs={'class': 'custom-select'}))
+
+
+class UserEditForm(forms.Form):
+    username = forms.CharField(max_length=32, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    password = forms.CharField(max_length=256, required=False, widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+    mail = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    url = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control'}))
+    nickname = forms.CharField(max_length=32, widget=forms.TextInput(attrs={'class': 'form-control'}))
+
+    choice_list = [(0, 'Administrator'), (1, 'Writer'), (2, 'User')]
+    group = forms.ChoiceField(choices=choice_list, widget=forms.Select(attrs={'class': 'custom-select'}))
+
+
+class CommentFilterForm(forms.Form):
+    keyword = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '关键字',}))
+
+
+class CommentCreateForm(forms.Form):
+    text = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control',}))
+    id = forms.IntegerField(widget=forms.TextInput(attrs={'style': 'display: none;'}))
+
+
+class LinkFilterForm(forms.Form):
+    keyword = forms.CharField(max_length=200, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '关键字',}))
+
+
+class LinkCreateForm(forms.Form):
+    name = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control',}))
+    url = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control',}))
+
+
+class SettingForm(forms.Form):
+    blog_name = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control',}))
+    page_size = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control',}))
+    meta_page_size = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control',}))
+    github = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control',}))
+    weibo = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control',}))

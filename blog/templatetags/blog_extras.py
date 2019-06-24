@@ -2,6 +2,8 @@ from django import template
 
 from blog.models import User
 
+import urllib, hashlib
+
 
 register = template.Library()
 
@@ -20,3 +22,10 @@ def get_view_name(source_str):
 @register.simple_tag
 def str_cat(a, b):
     return a + b
+
+
+@register.simple_tag
+def get_gravatar(email):
+    gravatar_url = "https://www.gravatar.com/avatar/" + hashlib.md5(email.lower().encode()).hexdigest() + "?s=200"
+    return gravatar_url
+

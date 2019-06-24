@@ -2,11 +2,16 @@
 {% load comment_tree %}
 {% block container %}
 <div class="page-article col-lg-9">
+    {% if response_message %}
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle"></i> {{ response_message }}！
+    </div>
+    {% endif %}
     <div class="card">
         <article class="card-body">
             <h1 class="card-title">{{ article_info.title }}</h1>
             <hr>
-            <p class="card-text">{{ article_info.text }}</p>
+            <div class="card-text">{{ article_info.text|safe }}</div>
         </article>
         <div class="card-footer">
             <span class="badge badge-warning"><i class="fas fa-calendar-day"></i> {{ article_info.create_time }}</span>
@@ -19,9 +24,36 @@
             {% endfor %}
         </div>
     </div>
-    <a href="#" class="page-article-comment-add page-content-button btn btn-primary">发表评论</a>
+    {% if basic_info.is_login == True %}
+    <a href="#" class="page-article-comment-add page-content-button btn btn-primary comment-reply" data-toggle="modal" data-target="#commentModal" id="0">发表评论</a>
+    {% else %}
+    <a href="{% url 'blog:login' %}" class="page-article-comment-add page-content-button btn btn-primary">登录后发表评论</a>
+    {% endif %}
     {% autoescape off %}
     {% get_comments article_info.id %}
     {% endautoescape %}
+</div>
+<div class="modal fade bd-example-modal-lg" id="commentModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="exampleModalLabel">评论</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{% url 'blog:article' article_info.slug %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    {{ comment_commit_form_info.id }}
+                    {{ comment_commit_form_info.text }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">提交</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}

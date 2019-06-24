@@ -11,6 +11,7 @@
 
         <link rel="stylesheet" href="{% static 'blog/css/bootstrap.min.css' %}">
         <link rel="stylesheet" href="{% static 'blog/css/style.css' %}">
+        <link rel="stylesheet" href="{% static 'blog/css/code.css' %}">
         <link rel="stylesheet" href="{% static 'blog/fontawesome/css/all.css' %}">
 
         <title>{{ basic_info.blog_name }}</title>
@@ -50,14 +51,26 @@
             <div class="row">
 
                 <div class="page-sidebar col-lg-3">
+                    {% if basic_info.is_login == True %}
                     <div class="card">
-                        <img class="card-img-top" src="{% static 'blog/image/avatar.jpg' %}" alt="Card image cap">
+                        <img class="card-img-top" src="{% get_gravatar basic_info.user_email %}" alt="Card image cap">
                         <div class="card-body">
-                            <h2 class="card-title">Nitrogens</h2>
-                            <p class="card-text">An algorithm lover.</p>
-                            <p class="card-text">Learning in College of Computer Science & Technology of Harbin Engineering University.</p>
+                            <h2 class="card-title">{{ basic_info.user_nickname }}</h2>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{% url 'blog:logout' %}" class="page-content-button btn btn-primary login-button">退出登录</a>
                         </div>
                     </div>
+                    {% else %}
+                    <div class="card">
+                        <div class="card-body">
+                            <a href="{% url 'blog:login' %}" class="page-content-button btn btn-primary login-button">登录</a>
+                        </div>
+                        <div class="card-body">
+                            <a href="{% url 'blog:register' %}" class="page-content-button btn btn-primary login-button">注册</a>
+                        </div>
+                    </div>
+                    {% endif %}
 
                     <form class="input-group mb-3" method="get" action="{% url 'blog:search' %}">
                         <input type="text" class="form-control" placeholder="搜索" id="keyword" name="keyword">
@@ -75,8 +88,8 @@
 
 
                     <div class="list-group">
-                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fab fa-github"></i>GitHub</span></a>
-                        <a href="#" class="list-group-item list-group-item-action"><span class="page-sidebar-list-content"><i class="fas fa-hashtag"></i>微博</span></a>
+                        <a href="https://github.com/{{ basic_info.github }}" class="list-group-item list-group-item-action" target="_blank"><span class="page-sidebar-list-content"><i class="fab fa-github"></i>GitHub</span></a>
+                        <a href="https://weibo.com/{{ basic_info.weibo }}" class="list-group-item list-group-item-action" target="_blank"><span class="page-sidebar-list-content"><i class="fas fa-hashtag"></i>微博</span></a>
                     </div>
                 </div>
 
@@ -97,7 +110,8 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
         <script src="{% static 'blog/js/bootstrap.min.js' %}"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
-        <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+        <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/javascript" src="{% static 'blog/js/math.js' %}"></script>
+        <script type="text/javascript" src="{% static 'blog/js/control.js' %}"></script>
     </body>
 </html>

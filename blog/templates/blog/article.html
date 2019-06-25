@@ -27,7 +27,7 @@
     {% if basic_info.is_login == True %}
     <a href="#" class="page-article-comment-add page-content-button btn btn-primary comment-reply" data-toggle="modal" data-target="#commentModal" id="0">发表评论</a>
     {% else %}
-    <a href="{% url 'blog:login' %}" class="page-article-comment-add page-content-button btn btn-primary">登录后发表评论</a>
+    <a href="{% url 'blog:login' %}" class="page-article-comment-add page-content-button btn btn-secondary">登录后发表评论</a>
     {% endif %}
     {% autoescape off %}
     {% get_comments article_info.id %}

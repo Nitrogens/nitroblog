@@ -1,7 +1,8 @@
 {% extends 'control/base.html' %}
+{% load control_extras %}
 {% block container %}
                     <div class="alert alert-primary" role="alert">
-                        <i class="fas fa-info-circle"></i> 欢迎回来，{{ request.session.username }}！
+                        <i class="fas fa-info-circle"></i> 欢迎回来，{% get_user_username_by_id request.session.user_id %}！
                     </div>
 
                     <div class="cp-dashboard-info row">
@@ -15,7 +16,7 @@
                                     <span class="cp-dashboard-statnumber">{{ number.article }}</span>
                                     <span class="cp-dashboard-unit">篇</span>
                                 </div>
-                                {% if request.session.user_group == 'administrator' or request.session.user_group == 'writer' %}
+                                {% if user_group == 'administrator' or user_group == 'writer' %}
                                 <div class="card-footer text-muted">
                                     <a href="{% url 'control:article_list' %}" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
                                 </div>
@@ -32,7 +33,7 @@
                                     <span class="cp-dashboard-statnumber">{{ number.comment }}</span>
                                     <span class="cp-dashboard-unit">条</span>
                                 </div>
-                                {% if request.session.user_group == 'administrator' or request.session.user_group == 'writer' %}
+                                {% if user_group == 'administrator' or user_group == 'writer' %}
                                 <div class="card-footer text-muted">
                                     <a href="#" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
                                 </div>
@@ -49,7 +50,7 @@
                                     <span class="cp-dashboard-statnumber">{{ number.category }}</span>
                                     <span class="cp-dashboard-unit">个</span>
                                 </div>
-                                {% if request.session.user_group == 'administrator' or request.session.user_group == 'writer' %}
+                                {% if user_group == 'administrator' or user_group == 'writer' %}
                                 <div class="card-footer text-muted">
                                     <a href="{% url 'control:category_list' %}" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
                                 </div>
@@ -66,7 +67,7 @@
                                     <span class="cp-dashboard-statnumber">{{ number.tag }}</span>
                                     <span class="cp-dashboard-unit">个</span>
                                 </div>
-                                {% if request.session.user_group == 'administrator' or request.session.user_group == 'writer' %}
+                                {% if user_group == 'administrator' or user_group == 'writer' %}
                                 <div class="card-footer text-muted">
                                     <a href="{% url 'control:tag_list' %}" class="btn btn-primary"><i class="fas fa-sliders-h"></i>管理</a>
                                 </div>
@@ -76,7 +77,7 @@
 
                     </div>
 
-                    {% if request.session.user_group == 'administrator' %}
+                    {% if user_group == 'administrator' %}
                     <div class="cp-dashboard-content-list row">
                         <div class="col-lg">
                             <div class="card cp-dashboard-card">

@@ -1,4 +1,6 @@
 {% load static %}
+{% load control_extras %}
+{% get_user_group_by_id request.session.user_id as user_group %}
 <!DOCTYPE html>
 <html>
     <head>
@@ -24,7 +26,7 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ml-auto">
                         <li class="nav-item">
-                            <span class="badge badge-primary page-navbar-username"><i class="fas fa-user"></i> {{ request.session.username }}</span>
+                            <span class="badge badge-primary page-navbar-username"><i class="fas fa-user"></i> {% get_user_username_by_id request.session.user_id %}</span>
                             <a href="{% url 'blog:index' %}" class="btn btn-warning page-navbar-logout" target="_blank"><i class="fas fa-home"></i> 打开主页</a>
                             <a href="{% url 'control:logout' %}" class="btn btn-danger page-navbar-logout"><i class="fas fa-sign-out-alt"></i> 退出登录</a>
                         </li>
@@ -48,10 +50,13 @@
                                 <a href="{% url 'control:dashboard' %}" class="list-group-item list-group-item-action"><i class="fas fa-tachometer-alt"></i>概要信息</a>
                                 <a href="{% url 'control:personal_information' %}" class="list-group-item list-group-item-action"><i class="fas fa-user-edit"></i>个人信息</a>
                                 <a href="{% url 'control:change_password' %}" class="list-group-item list-group-item-action"><i class="fas fa-key"></i>修改密码</a>
+                                {% if user_group == 'administrator' %}
                                 <a href="{% url 'control:setting' %}" class="list-group-item list-group-item-action"><i class="fas fa-cog"></i>系统设置</a>
+                                {% endif %}
                             </ul>
                         </div>
 
+                        {% if user_group == 'administrator' or user_group == 'writer' %}
                         <div class="card text-dark bg-dark mb-3">
                             <div class="card-header text-white">
                                 <i class="fas fa-pen-nib"></i>撰写
@@ -72,10 +77,13 @@
                                 <a href="{% url 'control:comment_list' %}" class="list-group-item list-group-item-action"><i class="far fa-comments"></i>评论</a>
                                 <a href="{% url 'control:category_list' %}" class="list-group-item list-group-item-action"><i class="fas fa-cube"></i>分类</a>
                                 <a href="{% url 'control:tag_list' %}" class="list-group-item list-group-item-action"><i class="fas fa-tags"></i>标签</a>
+                                {% if user_group == 'administrator' %}
                                 <a href="{% url 'control:link_list' %}" class="list-group-item list-group-item-action"><i class="fas fa-link"></i>链接</a>
                                 <a href="{% url 'control:user_list' %}" class="list-group-item list-group-item-action"><i class="fas fa-user-friends"></i>用户</a>
+                                {% endif %}
                             </ul>
                         </div>
+                        {% endif %}
                     </div>
 
                 </div>

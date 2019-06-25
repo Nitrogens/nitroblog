@@ -28,8 +28,6 @@ def login(request):
                 user = User.objects.get(username=username)
                 if password_encrypt(password) == user.password:
                     request.session['is_login'] = True
-                    request.session['username'] = user.username
-                    request.session['user_group'] = user.group
                     request.session['user_id'] = user.id
                     user.last_login_time = datetime.datetime.now()
                     user.save()
@@ -118,7 +116,7 @@ def personal_information(request):
             url = '%s',
             nickname = '%s'
             WHERE username = '%s';
-            ''' % (form_info.cleaned_data['email'], form_info.cleaned_data['url'], form_info.cleaned_data['nickname'], request.session['username'])
+            ''' % (form_info.cleaned_data['email'], form_info.cleaned_data['url'], form_info.cleaned_data['nickname'], User.objects.get(id=request.session['user_id']).username)
             try:
                 cursor = connection.cursor()
                 cursor.execute(operation_query)
@@ -128,7 +126,7 @@ def personal_information(request):
         else:
             response_message = '请检查输入格式！'
 
-    user_info = User.objects.get(username=request.session['username'])
+    user_info = User.objects.get(username=User.objects.get(id=request.session['user_id']).username)
     form_info = PersonalInformationForm()
     form_info['email'].initial = user_info.mail
     form_info['url'].initial = user_info.url
@@ -145,7 +143,7 @@ def change_password(request):
     if request.method == 'POST':
         form_info = PasswordChangeForm(request.POST)
         if form_info.is_valid():
-            user = User.objects.get(username=request.session['username'])
+            user = User.objects.get(username=User.objects.get(id=request.session['user_id']).username)
             if user.password == password_encrypt(form_info.cleaned_data['current_password']) and form_info.cleaned_data['new_password'] == form_info.cleaned_data['new_password_confirm']:
                 try:
                     user.password = password_encrypt(form_info.cleaned_data['new_password'])
@@ -166,7 +164,7 @@ def article_list(request, page_id=1):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     response_message = ''
@@ -185,7 +183,7 @@ def article_list(request, page_id=1):
             SELECT * FROM blog_content
             WHERE id in (%s) 
             ''' % article_id_set
-            if request.session['user_group'] != 'administrator':
+            if User.objects.get(id=request.session['user_id']).group != 'administrator':
                 operation_query += '''
                 AND author_id_id = %s
                 ''' % request.session['user_id']
@@ -210,11 +208,35 @@ def article_list(request, page_id=1):
     page_size = 10
     basic_info = get_basic_info(request)
     basic_info['number_of_article'] = 0
-    if request.session['user_group'] == 'administrator':
-        basic_info['number_of_article'] = Content.objects.filter(type='article').count()
-    else:
-        basic_info['number_of_article'] = Content.objects.filter(type='article',
-                                                                 author_id=User.objects.get(id=request.session['user_id'])).count()
+
+    number_of_article_query = '''
+    SELECT COUNT(id)
+    FROM blog_content
+    WHERE type = 'article'
+    '''
+
+    if User.objects.get(id=request.session['user_id']).group == 'writer':
+        number_of_article_query += '''
+        AND author_id_id = %s
+        ''' % request.session['user_id']
+
+    if keyword != '':
+        number_of_article_query += '''
+        AND title LIKE '%%%%%s%%%%'
+        ''' % keyword
+
+    if category_id != 0:
+        number_of_article_query += '''
+        AND id in (
+            SELECT content_id_id
+            FROM blog_relationship
+            WHERE meta_id_id = %s
+        )
+        ''' % category_id
+
+    cursor = connection.cursor()
+    cursor.execute(number_of_article_query)
+    basic_info['number_of_article'] = cursor.fetchone()[0]
     basic_info['number_of_article_page'] = ceil(basic_info['number_of_article'], page_size)
 
     left_range = 0 + page_size * (page_id - 1)
@@ -227,7 +249,7 @@ def article_list(request, page_id=1):
     WHERE blog_content.type = 'article' 
     '''
 
-    if request.session['user_group'] != 'administrator':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator':
         article_list_query += '''
         AND blog_content.author_id_id = %s
         ''' % request.session['user_id']
@@ -270,7 +292,7 @@ def page_list(request, page_id=1):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     if request.method == 'POST':
@@ -287,7 +309,7 @@ def page_list(request, page_id=1):
             SELECT * FROM blog_content
             WHERE id in (%s) 
             ''' % article_id_set
-            if request.session['user_group'] != 'administrator':
+            if User.objects.get(id=request.session['user_id']).group != 'administrator':
                 operation_query += '''
                 AND author_id_id = %s
                 ''' % request.session['user_id']
@@ -306,12 +328,26 @@ def page_list(request, page_id=1):
 
     page_size = 10
     basic_info = get_basic_info(request)
-    if request.session['user_group'] == 'administrator':
-        basic_info['number_of_article'] = Content.objects.filter(type='page').count()
-    else:
-        basic_info['number_of_article'] = Content.objects.filter(type='page',
-                                                                 author_id=User.objects.get(
-                                                                     id=request.session['user_id'])).count()
+
+    number_of_article_query = '''
+        SELECT COUNT(id)
+        FROM blog_content
+        WHERE type = 'page'
+        '''
+
+    if User.objects.get(id=request.session['user_id']).group == 'writer':
+        number_of_article_query += '''
+            AND author_id_id = %s
+            ''' % request.session['user_id']
+
+    if keyword != '':
+        number_of_article_query += '''
+            AND title LIKE '%%%%%s%%%%'
+            ''' % keyword
+
+    cursor = connection.cursor()
+    cursor.execute(number_of_article_query)
+    basic_info['number_of_article'] = cursor.fetchone()[0]
     basic_info['number_of_article_page'] = ceil(basic_info['number_of_article'], page_size)
 
     left_range = 0 + page_size * (page_id - 1)
@@ -324,7 +360,7 @@ def page_list(request, page_id=1):
     WHERE blog_content.type = 'page' 
     '''
 
-    if request.session['user_group'] != 'administrator':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator':
         article_list_query += '''
         AND blog_content.author_id_id = %s
         ''' % request.session['user_id']
@@ -353,7 +389,7 @@ def article_create(request):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     response_message = ''
@@ -434,7 +470,7 @@ def article_edit(request, article_id):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     article_info = None
@@ -444,7 +480,7 @@ def article_edit(request, article_id):
     except (KeyError, Content.DoesNotExist):
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
-    if request.session['user_group'] == 'writer' and article_info.author_id.id != request.session['user_id']:
+    if User.objects.get(id=request.session['user_id']).group == 'writer' and article_info.author_id.id != request.session['user_id']:
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     response_message = ''
@@ -576,7 +612,7 @@ def page_create(request):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     response_message = ''
@@ -614,7 +650,7 @@ def page_edit(request, page_id):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     page_info = None
@@ -624,7 +660,7 @@ def page_edit(request, page_id):
     except (KeyError, Content.DoesNotExist):
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
-    if request.session['user_group'] == 'writer' and page_info.author_id.id != request.session['user_id']:
+    if User.objects.get(id=request.session['user_id']).group == 'writer' and page_info.author_id.id != request.session['user_id']:
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     response_message = ''
@@ -677,7 +713,7 @@ def category_list(request, page_id=1):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     if request.method == 'POST':
@@ -709,7 +745,10 @@ def category_list(request, page_id=1):
 
     page_size = 10
     basic_info = get_basic_info(request)
-    basic_info['number_of_category'] = Meta.objects.filter(type='category').count()
+    if keyword == '':
+        basic_info['number_of_category'] = Meta.objects.filter(type='category').count()
+    else:
+        basic_info['number_of_category'] = Meta.objects.filter(type='category', name__contains=keyword).count()
     basic_info['number_of_category_page'] = ceil(basic_info['number_of_category'], page_size)
 
     left_range = 0 + page_size * (page_id - 1)
@@ -743,7 +782,7 @@ def category_create(request):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     response_message = ''
@@ -781,7 +820,7 @@ def category_edit(request, category_id):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     category_info = None
@@ -838,7 +877,7 @@ def tag_list(request, page_id=1):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     if request.method == 'POST':
@@ -870,7 +909,10 @@ def tag_list(request, page_id=1):
 
     page_size = 10
     basic_info = get_basic_info(request)
-    basic_info['number_of_tag'] = Meta.objects.filter(type='tag').count()
+    if keyword == '':
+        basic_info['number_of_tag'] = Meta.objects.filter(type='tag').count()
+    else:
+        basic_info['number_of_tag'] = Meta.objects.filter(type='tag', name__contains=keyword).count()
     basic_info['number_of_tag_page'] = ceil(basic_info['number_of_tag'], page_size)
 
     left_range = 0 + page_size * (page_id - 1)
@@ -904,7 +946,7 @@ def tag_create(request):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     response_message = ''
@@ -942,7 +984,7 @@ def tag_edit(request, tag_id):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     tag_info = None
@@ -999,7 +1041,7 @@ def user_list(request, page_id=1):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     if request.method == 'POST':
@@ -1033,7 +1075,10 @@ def user_list(request, page_id=1):
 
     page_size = 10
     basic_info = get_basic_info(request)
-    basic_info['number_of_user'] = User.objects.all().count()
+    if keyword == '':
+        basic_info['number_of_user'] = User.objects.all().count()
+    else:
+        basic_info['number_of_user'] = User.objects.filter(username__contains=keyword).count()
     basic_info['number_of_user_page'] = ceil(basic_info['number_of_user'], page_size)
 
     left_range = 0 + page_size * (page_id - 1)
@@ -1065,7 +1110,7 @@ def user_create(request):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     response_message = ''
@@ -1111,7 +1156,7 @@ def user_edit(request, user_id):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     user_info = None
@@ -1196,7 +1241,7 @@ def comment_list(request, page_id=1):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator' and request.session['user_group'] != 'writer':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator' and User.objects.get(id=request.session['user_id']).group != 'writer':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     if request.method == 'POST':
@@ -1240,7 +1285,7 @@ def comment_list(request, page_id=1):
                     WHERE id in (%s)
                     ''' % comment_id_set
 
-            if request.session['user_group'] == 'writer':
+            if User.objects.get(id=request.session['user_id']).group == 'writer':
                 operation_query += '''
                         AND content_id_id in (
                             SELECT id
@@ -1277,8 +1322,9 @@ def comment_list(request, page_id=1):
     number_of_comment_query = '''
     SELECT COUNT(id) FROM blog_comment
     '''
-    if request.session['user_group'] == 'writer':
-        operation_query += '''
+
+    if User.objects.get(id=request.session['user_id']).group == 'writer':
+        number_of_comment_query += '''
         WHERE content_id_id in (
             SELECT id
             FROM blog_content
@@ -1286,9 +1332,16 @@ def comment_list(request, page_id=1):
         )
         ''' % request.session['user_id']
 
+    if keyword != '':
+        number_of_comment_query += '''
+        WHERE text LIKE '%%%%%s%%%%'
+        ''' % keyword
+
     page_size = 10
     basic_info = get_basic_info(request)
-    basic_info['number_of_comment'] = connection.cursor().execute(number_of_comment_query)
+    cursor = connection.cursor()
+    cursor.execute(number_of_comment_query)
+    basic_info['number_of_comment'] = cursor.fetchone()[0]
     basic_info['number_of_comment_page'] = ceil(basic_info['number_of_comment'], page_size)
 
     left_range = 0 + page_size * (page_id - 1)
@@ -1298,8 +1351,8 @@ def comment_list(request, page_id=1):
     FROM blog_comment
     '''
 
-    if request.session['user_group'] == 'writer':
-        operation_query += '''
+    if User.objects.get(id=request.session['user_id']).group == 'writer':
+        comment_list_query += '''
         WHERE content_id_id in (
             SELECT id
             FROM blog_content
@@ -1338,7 +1391,7 @@ def link_list(request, page_id=1):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     if request.method == 'POST':
@@ -1370,7 +1423,10 @@ def link_list(request, page_id=1):
 
     page_size = 10
     basic_info = get_basic_info(request)
-    basic_info['number_of_link'] = Link.objects.filter().count()
+    if keyword == '':
+        basic_info['number_of_link'] = Link.objects.all().count()
+    else:
+        basic_info['number_of_link'] = Link.objects.filter(name__contains=keyword).count()
     basic_info['number_of_link_page'] = ceil(basic_info['number_of_link'], page_size)
 
     left_range = 0 + page_size * (page_id - 1)
@@ -1402,7 +1458,7 @@ def link_create(request):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     response_message = ''
@@ -1435,7 +1491,7 @@ def link_edit(request, link_id):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     link_info = None
@@ -1482,7 +1538,7 @@ def setting(request):
     if request.session.get('is_login') is None:
         return HttpResponseRedirect(reverse('control:login', args=()))
 
-    if request.session['user_group'] != 'administrator':
+    if User.objects.get(id=request.session['user_id']).group != 'administrator':
         return HttpResponseRedirect(reverse('control:forbidden', args=()))
 
     response_message = ''
